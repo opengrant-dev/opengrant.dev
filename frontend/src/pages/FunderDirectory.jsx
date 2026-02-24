@@ -107,7 +107,7 @@ export default function FunderDirectory() {
   useEffect(() => {
     fetch('/api/funding-sources')
       .then(r => r.json())
-      .then(data => { setFunders(Array.isArray(data) ? data : data.sources || []); setLoading(false) })
+      .then(data => { setFunders(Array.isArray(data) ? data : data.funding_sources || []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
