@@ -1,107 +1,127 @@
 @echo off
+cd /d "%~dp0"
 title OpenGrant Setup
 color 0A
+
 echo.
 echo  ==========================================
-echo   OpenGrant - First Time Setup
+echo   OpenGrant  -  First Time Setup
 echo  ==========================================
 echo.
 
-REM --- Python check ---
+REM ── 1. Python check ────────────────────────────────────────────────────────
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python not found!
-    echo.
-    echo  Install Python 3.10+ from: https://python.org/downloads
-    echo  IMPORTANT: Check "Add Python to PATH" during install!
-    echo.
-    pause
-    exit /b 1
+    py --version >nul 2>&1
+    if errorlevel 1 (
+        echo [ERROR] Python not found!
+        echo.
+        echo  Install Python 3.10 or newer from:
+        echo  https://python.org/downloads
+        echo.
+        echo  IMPORTANT: During install, check the box
+        echo  "Add Python to PATH"
+        echo.
+        pause
+        exit /b 1
+    )
+    set PYTHON=py
+) else (
+    set PYTHON=python
 )
-for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set PYVER=%%v
-echo [OK] Python %PYVER% found
+for /f "tokens=*" %%v in ('%PYTHON% --version 2^>^&1') do echo [OK] %%v found
 
-REM --- Node.js check ---
+REM ── 2. Node.js check ───────────────────────────────────────────────────────
 node --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Node.js not found!
     echo.
-    echo  Install Node.js 18+ from: https://nodejs.org
+    echo  Install Node.js 18 or newer from:
+    echo  https://nodejs.org
     echo.
     pause
     exit /b 1
 )
-for /f %%v in ('node --version 2^>^&1') do set NODEVER=%%v
-echo [OK] Node.js %NODEVER% found
-echo.
+for /f %%v in ('node --version') do echo [OK] Node.js %%v found
 
-REM --- .env setup: copy if missing ---
-if not exist backend\.env (
-    copy backend\.env.example backend\.env >nul
+REM ── 3. Create .env if missing ──────────────────────────────────────────────
+if not exist "backend\.env" (
+    if not exist "backend\.env.example" (
+        echo [ERROR] backend\.env.example missing. Re-download the project.
+        pause
+        exit /b 1
+    )
+    copy "backend\.env.example" "backend\.env" >nul
+    echo [OK] Created backend\.env from template
 )
 
-REM --- Loop until API key is actually set ---
-:check_key
-findstr /C:"YOUR_KEY_HERE" backend\.env >nul 2>&1
+REM ── 4. Check if API key is set ─────────────────────────────────────────────
+findstr /C:"YOUR_KEY_HERE" "backend\.env" >nul 2>&1
 if not errorlevel 1 (
     echo.
-    echo  ==========================================
-    echo   STEP NEEDED: Add your FREE API key
+    echo  ============================================================
+    echo   ACTION REQUIRED - Set your FREE Groq API key:
     echo.
-    echo   1. Go to: https://console.groq.com
-    echo   2. Sign up free, click "API Keys", create one
-    echo   3. Copy the key  (starts with gsk_...)
-    echo   4. In the Notepad window that opens:
-    echo      Replace  YOUR_KEY_HERE  with your key
-    echo   5. Save the file  (Ctrl+S)
-    echo   6. Close Notepad
-    echo   7. Press any key HERE to continue
-    echo  ==========================================
+    echo   1. Open: https://console.groq.com
+    echo   2. Sign up free ^> click "API Keys" ^> "Create API Key"
+    echo   3. Copy the key (starts with gsk_...)
+    echo   4. In the file that opens: replace YOUR_KEY_HERE with it
+    echo   5. Save the file (Ctrl+S) then close it
+    echo   6. Press any key here to continue
+    echo  ============================================================
     echo.
-    start /wait notepad "%~dp0backend\.env"
-    findstr /C:"YOUR_KEY_HERE" backend\.env >nul 2>&1
+    start "" notepad "%~dp0backend\.env"
+    pause >nul
+    echo.
+    findstr /C:"YOUR_KEY_HERE" "backend\.env" >nul 2>&1
     if not errorlevel 1 (
+        echo  [WARNING] Key still not set. You can set it later.
+        echo  The app will not work until a valid API key is added.
         echo.
-        echo  [!] Key not saved yet. Please try again.
-        goto check_key
+    ) else (
+        echo [OK] API key set!
     )
 )
-echo [OK] API key is set
 
-REM --- Python packages ---
+REM ── 5. Install Python packages ─────────────────────────────────────────────
 echo.
-echo Installing Python packages (1-3 min)...
-python -m pip install --upgrade pip --quiet
-python -m pip install -r backend\requirements.txt
+echo Installing Python packages...
+%PYTHON% -m pip install --upgrade pip -q
+%PYTHON% -m pip install -r "backend\requirements.txt"
 if errorlevel 1 (
     echo.
-    echo [ERROR] Python install failed! Try running as Administrator.
+    echo [ERROR] Python package install failed!
+    echo.
+    echo  Try running this window as Administrator, or run:
+    echo  python -m pip install -r backend\requirements.txt
+    echo.
     pause
     exit /b 1
 )
-echo [OK] Python packages done
+echo [OK] Python packages installed
 
-REM --- Node packages ---
+REM ── 6. Install Node packages ───────────────────────────────────────────────
 echo.
-echo Installing Node.js packages (1-3 min)...
-cd frontend
-call npm install --silent
+echo Installing Node.js packages...
+cd /d "%~dp0frontend"
+call npm install
 if errorlevel 1 (
     echo.
-    echo [ERROR] npm install failed! Check internet and retry.
-    cd ..
+    echo [ERROR] npm install failed!
+    echo  Try deleting the frontend\node_modules folder and retry.
+    echo.
+    cd /d "%~dp0"
     pause
     exit /b 1
 )
-cd ..
-echo [OK] Node.js packages done
+cd /d "%~dp0"
+echo [OK] Node.js packages installed
 
 echo.
 echo  ==========================================
-echo   Setup Complete! Launching OpenGrant...
+echo   Setup complete!
+echo.
+echo   Now double-click START.bat to launch.
 echo  ==========================================
 echo.
-timeout /t 2 /nobreak >nul
-
-REM --- Launch app immediately after setup ---
-call "%~dp0START.bat"
+pause
