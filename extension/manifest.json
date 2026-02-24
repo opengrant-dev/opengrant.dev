@@ -1,22 +1,26 @@
 {
   "manifest_version": 3,
-  "name": "OpenGrant — Find Funding for OSS",
-  "version": "1.0.0",
-  "description": "Instantly find grants, hackathons, and sponsorships for any GitHub repository.",
+  "name": "OpenGrant — GitHub Funding Copilot",
+  "version": "2.0.0",
+  "description": "AI-powered funding sidebar for every GitHub page. Viral score, grant matching, developer profiles, bounty detection — for ALL developers, beginner to senior.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "content_scripts": [{
-    "matches": ["https://github.com/*/*"],
+    "matches": ["https://github.com/*"],
     "js": ["content.js"],
-    "css": ["content.css"]
+    "css": ["content.css"],
+    "run_at": "document_idle"
   }],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "OpenGrant"
+    "default_title": "OpenGrant Funding Copilot"
   },
-  "permissions": ["storage", "activeTab"],
-  "host_permissions": ["http://localhost:8765/*"]
+  "permissions": ["storage", "activeTab", "tabs"],
+  "host_permissions": [
+    "http://localhost:8765/*",
+    "https://api.github.com/*"
+  ]
 }

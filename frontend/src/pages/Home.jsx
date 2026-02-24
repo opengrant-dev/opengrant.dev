@@ -118,13 +118,19 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden px-4 pt-20 pb-16 sm:pt-28 sm:pb-24 text-center">
+        {/* Hacker grid */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.025]"
           style={{
-            backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',
+            backgroundImage: 'linear-gradient(#0ea5e9 1px,transparent 1px),linear-gradient(90deg,#0ea5e9 1px,transparent 1px)',
             backgroundSize: '40px 40px',
           }}
         />
+        {/* Corner brackets */}
+        <div className="pointer-events-none absolute top-8 left-8 w-8 h-8 border-t-2 border-l-2 border-emerald-500/20 hidden lg:block" />
+        <div className="pointer-events-none absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-emerald-500/20 hidden lg:block" />
+        <div className="pointer-events-none absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-emerald-500/20 hidden lg:block" />
+        <div className="pointer-events-none absolute bottom-8 right-8 w-8 h-8 border-b-2 border-r-2 border-emerald-500/20 hidden lg:block" />
 
         <motion.div
           className="relative mx-auto max-w-4xl"
@@ -132,47 +138,84 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Trust badge */}
+          {/* Terminal badge */}
           <motion.div
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1.5 text-sm text-sky-400"
+            className="mb-6 inline-flex items-center gap-3 rounded-full border border-emerald-500/25 bg-emerald-500/8 px-5 py-2 font-mono text-xs text-emerald-400"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
           >
-            <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
-            200+ funding sources · Free · No account needed
+            <span className="status-online" />
+            <span className="text-emerald-600 mr-1">$</span>
+            <span>298 funding_sources --world-coverage --ai-powered --free</span>
           </motion.div>
 
-          <h1 className="mb-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl lg:text-7xl">
+          <motion.h1
+            className="mb-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl lg:text-7xl"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             Get paid for your{' '}
-            <span className="gradient-text">open source</span>{' '}
+            <span className="holo-text">open source</span>{' '}
             project
-          </h1>
+          </motion.h1>
 
-          <p className="mx-auto mb-4 max-w-2xl text-lg text-slate-400 sm:text-xl">
+          <motion.p
+            className="mx-auto mb-4 max-w-2xl text-lg text-slate-400 sm:text-xl"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+          >
             Paste your GitHub link. AI finds grants, hackathons, and sponsorships that match your project.
             <strong className="text-white"> Takes 30 seconds.</strong>
-          </p>
+          </motion.p>
 
-          {/* Simpler sub-message for beginners */}
-          <p className="mx-auto mb-10 max-w-xl text-sm text-slate-500">
-            Never applied for funding before? That's okay — we'll show you exactly what to do, step by step.
-          </p>
+          <motion.p
+            className="mx-auto mb-10 max-w-xl text-sm text-slate-500 font-mono"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
+          >
+            <span className="text-emerald-600">//</span> Beginner to senior — every developer finds funding here
+          </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.4 }}
           >
             <RepoForm />
           </motion.div>
 
-          {/* What you get */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
-            {['✅ Funding matches ranked by fit', '✅ Your project\'s score + tips', '✅ Ready-to-use application text', '✅ Free, no login'].map(item => (
-              <span key={item}>{item}</span>
+          {/* Feature pills */}
+          <motion.div
+            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
+          >
+            {[
+              { icon: '🎯', text: 'Ranked by fit',       color: 'border-emerald-500/20 text-emerald-400 bg-emerald-500/5' },
+              { icon: '📊', text: 'Fundability score',   color: 'border-sky-500/20 text-sky-400 bg-sky-500/5' },
+              { icon: '✍️', text: 'AI application text', color: 'border-violet-500/20 text-violet-400 bg-violet-500/5' },
+              { icon: '🔓', text: 'Free, no login',      color: 'border-amber-500/20 text-amber-400 bg-amber-500/5' },
+            ].map(({ icon, text, color }) => (
+              <span key={text} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono ${color}`}>
+                {icon} {text}
+              </span>
             ))}
-          </div>
+          </motion.div>
+
+          {/* Live activity ticker */}
+          <motion.div
+            className="mt-8 mx-auto max-w-xl overflow-hidden rounded-xl border border-white/5 bg-white/[0.02]"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
+          >
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5">
+              <span className="status-online" />
+              <span className="font-mono text-[10px] text-emerald-500/70 tracking-widest">LIVE FUNDING ACTIVITY</span>
+            </div>
+            <div className="overflow-hidden h-8 flex items-center">
+              <div className="terminal-ticker font-mono text-[10px] text-slate-500 whitespace-nowrap py-2">
+                💰 NLnet funded curl → $2.5M  ◈  🔥 Django REST Framework matched Mozilla MOSS  ◈  ⚡ 3 repos went viral today  ◈  🏆 ETHGlobal Hackathon: $1.5M prize pool  ◈  🧬 Rust repos get 1.6× more funding  ◈  📈 GSoC 2025 applications now open  ◈  💎 Gitcoin Round 23 live  ◈  🌍 50+ countries covered  ◈
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </section>
 
