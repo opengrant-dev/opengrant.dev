@@ -62,12 +62,13 @@ async def lifespan(app: FastAPI):
     # Shutdown (nothing to clean up)
 
 
+_IS_PROD = os.getenv("ENVIRONMENT", "development") == "production"
 app = FastAPI(
     title="OpenGrant API",
     description="AI-powered matching between GitHub repos and funding opportunities.",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if _IS_PROD else "/docs",
+    redoc_url=None if _IS_PROD else "/redoc",
     lifespan=lifespan,
 )
 
@@ -75,12 +76,18 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+_ALLOWED_ORIGINS = [
+    FRONTEND_URL,
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://opengrant.dev",  # production domain (update when deploying)
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:3000", "http://localhost:5173", "*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -93,10 +100,13 @@ class RepoSubmitRequest(BaseModel):
     @field_validator("github_url")
     @classmethod
     def must_be_github(cls, v: str) -> str:
+        import re
         v = v.strip()
-        if "github.com" not in v and "/" not in v:
-            raise ValueError("Please provide a valid GitHub repository URL.")
-        return v
+        # Strict: must match https://github.com/owner/repo
+        pattern = r'^https://github\.com/[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+/?$'
+        if not re.match(pattern, v):
+            raise ValueError("Please provide a valid GitHub URL: https://github.com/owner/repo")
+        return v.rstrip('/')
 
 
 class MatchDetailsRequest(BaseModel):
@@ -247,6 +257,121 @@ async def _analyze_and_match(repo_id: str):
 @app.get("/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/scan")
+@limiter.limit("5/minute")
+async def scan_repo_get(request: Request, url: str, db: Session = Depends(get_db)):
+    """
+    Single GET endpoint for AI agents (web_fetch compatible).
+    Submits repo, waits for analysis, returns formatted results.
+    Usage: GET /api/scan?url=https://github.com/owner/repo
+    """
+    import uuid as _uuid
+
+    try:
+        # Validate URL strictly
+        import re as _re
+        url = url.strip()
+        _pattern = r'^https://github\.com/[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+/?$'
+        if not _re.match(_pattern, url):
+            return {"error": "Invalid GitHub URL. Format: https://github.com/owner/repo"}
+        url = url.rstrip("/")
+
+        parts = url.split("/")
+        if len(parts) < 5:
+            return {"error": "Invalid GitHub URL. Format: https://github.com/owner/repo"}
+
+        owner, repo_name = parts[3], parts[4]
+
+        # Check if already analyzed
+        existing = db.query(Repo).filter(Repo.github_url == url).first()
+        if existing and existing.status == "analyzed":
+            repo_id = existing.id
+        else:
+            # Submit new or reuse pending
+            if existing:
+                repo_id = existing.id
+            else:
+                repo_id = str(_uuid.uuid4())
+                new_repo = Repo(
+                    id=repo_id,
+                    github_url=url,
+                    repo_name=repo_name,
+                    owner=owner,
+                    status="pending",
+                )
+                db.add(new_repo)
+                db.commit()
+
+            # Run analysis inline (await)
+            await _analyze_and_match(repo_id)
+
+        # Re-fetch fresh from DB
+        repo = db.query(Repo).filter(Repo.id == repo_id).first()
+        if not repo:
+            return {"error": "Repo not found after analysis."}
+
+        if repo.status == "error":
+            return {"error": repo.error_message or "Analysis failed. Repo may be private."}
+
+        if repo.status != "analyzed":
+            return {"error": "Analysis not complete. Try again in a few seconds."}
+
+        # Get top matches
+        matches = (
+            db.query(Match, FundingSource)
+            .join(FundingSource, Match.funding_id == FundingSource.id)
+            .filter(Match.repo_id == repo.id)
+            .order_by(Match.match_score.desc())
+            .limit(5)
+            .all()
+        )
+
+        # Build repo dict for fundability (exclude SQLAlchemy internals)
+        repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+        fundability = analyze_fundability(repo_dict)
+
+        top_matches = []
+        for m, fs in matches:
+            if fs.min_amount and fs.max_amount:
+                amount = f"${fs.min_amount:,}–${fs.max_amount:,}"
+            elif fs.max_amount:
+                amount = f"up to ${fs.max_amount:,}"
+            else:
+                amount = "varies"
+            # match_score stored as 0-100 scale
+            pct = round(m.match_score) if m.match_score > 1 else round(m.match_score * 100)
+            top_matches.append({
+                "funder": fs.name,
+                "amount": amount,
+                "match_pct": min(pct, 100),
+                "type": fs.type or "",
+                "url": fs.url or "",
+            })
+
+        score = fundability.get("score", 0)
+        grade = fundability.get("grade", "N/A")
+        potential = fundability.get("funding_potential_usd", "Unknown")
+        top_funder = top_matches[0]["funder"] if top_matches else "none"
+        top_pct = top_matches[0]["match_pct"] if top_matches else 0
+
+        return {
+            "repo": f"{owner}/{repo_name}",
+            "stars": repo.stars,
+            "forks": repo.forks,
+            "language": repo.language,
+            "description": repo.description,
+            "fundability_score": score,
+            "grade": grade,
+            "funding_potential_usd": potential,
+            "top_matches": top_matches,
+            "dashboard_url": f"http://localhost:5173/results/{repo.id}",
+            "summary": f"{owner}/{repo_name} scored {score}/100 (Grade {grade}). Top match: {top_funder} ({top_pct}% match). Potential: {potential}.",
+        }
+
+    except Exception as e:
+        return {"error": f"Scan failed: {str(e)}"}
 
 
 @app.get("/api/stats")

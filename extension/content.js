@@ -65,6 +65,15 @@
   function setBody(html) {
     document.getElementById('og-body').innerHTML = html
   }
+  // Safe text helper — never use for user-controlled content in HTML attributes
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
 
   /* ══════════════════════════════════════════════════════════
      MODE 1 — REPO ANALYSIS
@@ -103,8 +112,8 @@
     setBody(`
       <div class="og-repo-wrap">
 
-        <div class="og-repo-name">${owner}/<strong>${repo}</strong></div>
-        ${topics.length ? `<div class="og-topics">${topics.slice(0,4).map(t => `<span class="og-topic">${t}</span>`).join('')}</div>` : ''}
+        <div class="og-repo-name">${esc(owner)}/<strong>${esc(repo)}</strong></div>
+        ${topics.length ? `<div class="og-topics">${topics.slice(0,4).map(t => `<span class="og-topic">${esc(t)}</span>`).join('')}</div>` : ''}
 
         <div class="og-score-section">
           <div class="og-ring" style="border-color:${color};box-shadow:0 0 24px ${glow}">
@@ -217,10 +226,10 @@
     setBody(`
       <div class="og-profile-wrap">
         <div class="og-profile-hdr">
-          ${user.avatar_url ? `<img src="${user.avatar_url}" class="og-avatar" />` : '<div class="og-avatar-placeholder">👤</div>'}
+          ${/^https:\/\/avatars\.githubusercontent\.com\//.test(user.avatar_url || '') ? `<img src="${esc(user.avatar_url)}" class="og-avatar" />` : '<div class="og-avatar-placeholder">👤</div>'}
           <div class="og-profile-info">
-            <div class="og-profile-name">@${username}</div>
-            <div class="og-profile-bio">${user.bio ? user.bio.slice(0,60) : 'Open Source Developer'}</div>
+            <div class="og-profile-name">@${esc(username)}</div>
+            <div class="og-profile-bio">${user.bio ? esc(user.bio.slice(0,60)) : 'Open Source Developer'}</div>
             ${user.location ? `<div class="og-profile-loc">📍 ${user.location}</div>` : ''}
           </div>
         </div>
