@@ -13,6 +13,8 @@ const NAV_LINKS = [
   { to: '/velocity',     label: 'Velocity',   icon: '⚡', tip: 'Track funding progress' },
   { to: '/roadmap',      label: 'Roadmap',    icon: '🗺️', tip: '90-day funding plan' },
   { to: '/trending',    label: 'Trending',   icon: '🔥', tip: 'Hot repos + instant funding scan' },
+  { to: '/funders',    label: 'Funders',    icon: '💰', tip: 'Browse all 298 funding sources' },
+  { to: '/leaderboard', label: 'Top Repos', icon: '🏆', tip: 'Most fundable repos on OpenGrant' },
 ]
 
 export default function Navbar() {
@@ -51,6 +53,15 @@ export default function Navbar() {
               </Link>
             )
           })}
+
+          {/* Ctrl+K hint */}
+          <button
+            className="ml-1 flex items-center gap-1 px-2 py-1.5 rounded-lg border border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20 transition-colors text-xs"
+            title="Open command palette"
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))}
+          >
+            <span>⌘K</span>
+          </button>
 
           {/* CTA */}
           <Link

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "OpenGrant — Find Funding for OSS",
+  "version": "1.0.0",
+  "description": "Instantly find grants, hackathons, and sponsorships for any GitHub repository.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [{
+    "matches": ["https://github.com/*/*"],
+    "js": ["content.js"],
+    "css": ["content.css"]
+  }],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "OpenGrant"
+  },
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["http://localhost:8765/*"]
+}

@@ -1052,6 +1052,47 @@ async def get_trending(
 
 
 # ---------------------------------------------------------------------------
+# Leaderboard — most fundable repos on this platform
+# ---------------------------------------------------------------------------
+@app.get("/api/leaderboard")
+def get_leaderboard(limit: int = 25, db: Session = Depends(get_db)):
+    """Return repos ranked by funding match quality (top_score * match_count)."""
+    repos = db.query(Repo).filter(Repo.status == "analyzed").all()
+
+    leaderboard = []
+    for repo in repos:
+        matches = db.query(Match).filter(Match.repo_id == repo.id).all()
+        if not matches:
+            continue
+        avg_score = sum(m.match_score for m in matches) / len(matches)
+        top_score = max(m.match_score for m in matches)
+        total_potential = 0
+        for m in matches:
+            fs = db.query(FundingSource).filter(FundingSource.id == m.funding_id).first()
+            if fs:
+                total_potential += fs.max_amount or 0
+        leaderboard.append({
+            "repo_id": repo.id,
+            "repo_name": repo.repo_name,
+            "github_url": repo.github_url,
+            "stars": repo.stars or 0,
+            "language": repo.language or "",
+            "description": repo.description or "",
+            "match_count": len(matches),
+            "avg_score": round(avg_score, 1),
+            "top_score": round(top_score, 1),
+            "total_potential_usd": total_potential,
+            "analyzed_at": repo.created_at.isoformat() if repo.created_at else "",
+        })
+
+    leaderboard.sort(key=lambda x: x["top_score"] * x["match_count"], reverse=True)
+    return {
+        "leaderboard": leaderboard[:limit],
+        "total_repos_analyzed": len(repos),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Run locally
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

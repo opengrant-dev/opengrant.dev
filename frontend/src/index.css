@@ -133,3 +133,100 @@ code, .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-in { animation: fadeIn 0.4s ease forwards; }
+
+/* ── Aurora orb animations ── */
+@keyframes float1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(80px, 60px) scale(1.15); }
+}
+@keyframes float2 {
+  0%   { transform: translate(0, 0) scale(1.05); }
+  100% { transform: translate(-60px, 80px) scale(0.9); }
+}
+@keyframes float3 {
+  0%   { transform: translate(0, 0) scale(0.95); }
+  100% { transform: translate(100px, -60px) scale(1.1); }
+}
+.aurora-orb-1 { animation: float1 20s ease-in-out infinite alternate; }
+.aurora-orb-2 { animation: float2 25s ease-in-out infinite alternate; }
+.aurora-orb-3 { animation: float3 30s ease-in-out infinite alternate; }
+
+/* ── Scroll progress bar ── */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  z-index: 9999;
+  background: linear-gradient(90deg, #0ea5e9, #6366f1, #8b5cf6);
+  transition: width 0.1s linear;
+  pointer-events: none;
+}
+
+/* ── Command palette backdrop ── */
+.cmd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 9998;
+}
+
+/* ── Toast animations ── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(100px) scale(0.9); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(100px) scale(0.9); }
+}
+
+/* ── Gradient border ── */
+.gradient-border {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(#020617, #020617) padding-box,
+              linear-gradient(135deg, #0ea5e9, #6366f1) border-box;
+  border: 1px solid transparent;
+}
+
+/* ── Hover lift ── */
+.hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.hover-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(14,165,233,0.15); }
+
+/* ── Number counter ── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.count-up { animation: countUp 0.6s ease forwards; }
+
+/* ── Typewriter cursor ── */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.typewriter-cursor::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  color: #0ea5e9;
+  margin-left: 2px;
+}
+
+/* ── Page transition ── */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter { animation: pageIn 0.3s ease forwards; }
+
+/* ── Pulse ring ── */
+@keyframes pulseRing {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #0ea5e9;
+  animation: pulseRing 2s ease-out infinite;
+}
