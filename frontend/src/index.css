@@ -230,3 +230,153 @@ code, .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
   border: 2px solid #0ea5e9;
   animation: pulseRing 2s ease-out infinite;
 }
+
+/* ══════════════════════════════════════════
+   HACKER TERMINAL STYLES
+══════════════════════════════════════════ */
+
+/* ── Navbar terminal ticker ── */
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.terminal-ticker {
+  animation: tickerScroll 35s linear infinite;
+  display: inline-block;
+  padding-left: 100%;
+}
+
+/* ── Neon text glow ── */
+.neon-green  {
+  color: #4ade80;
+  text-shadow: 0 0 8px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.2);
+}
+.neon-sky {
+  color: #38bdf8;
+  text-shadow: 0 0 8px rgba(56,189,248,0.6), 0 0 20px rgba(56,189,248,0.2);
+}
+.neon-purple {
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192,132,252,0.6), 0 0 20px rgba(192,132,252,0.2);
+}
+.neon-amber {
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251,191,36,0.6), 0 0 20px rgba(251,191,36,0.2);
+}
+
+/* ── Terminal card ── */
+.terminal-card {
+  background: rgba(2, 6, 23, 0.95);
+  border: 1px solid rgba(74, 222, 128, 0.15);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  position: relative;
+  overflow: hidden;
+}
+.terminal-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #4ade80, #38bdf8, #c084fc, transparent);
+  opacity: 0.7;
+}
+
+/* ── Glitch animation ── */
+@keyframes glitch {
+  0%,  90%, 100% { text-shadow: none; transform: none; clip-path: none; }
+  91%  { text-shadow: -2px 0 #f0f, 2px 0 #0ff; transform: skewX(-3deg); }
+  92%  { text-shadow: 2px 0 #f0f, -2px 0 #0ff; transform: skewX(3deg); }
+  93%  { text-shadow: none; clip-path: polygon(0 30%, 100% 30%, 100% 60%, 0 60%); }
+  94%  { text-shadow: -1px 0 #0ff; transform: translateX(1px); clip-path: none; }
+  95%  { text-shadow: 1px 0 #f0f; transform: translateX(-1px); }
+}
+.glitch { animation: glitch 6s ease-in-out infinite; }
+
+/* ── Scanline overlay ── */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.04) 3px,
+    rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Matrix character drip ── */
+@keyframes matrixDrip {
+  0%   { opacity: 0; transform: translateY(-20px); }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.7; }
+  100% { opacity: 0; transform: translateY(120px); }
+}
+
+/* ── Hacker border pulse ── */
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(74,222,128,0.15); box-shadow: 0 0 0 rgba(74,222,128,0); }
+  50%       { border-color: rgba(74,222,128,0.4);  box-shadow: 0 0 20px rgba(74,222,128,0.1); }
+}
+.hacker-border {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* ── Typing animation ── */
+@keyframes typing {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+.typing-anim {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 1.5s steps(30, end) forwards;
+}
+
+/* ── Status dot blink ── */
+@keyframes statusBlink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(74,222,128,0.8); }
+  50%       { opacity: 0.15; box-shadow: none; }
+}
+.status-online {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: #4ade80;
+  border-radius: 50%;
+  animation: statusBlink 1.4s ease-in-out infinite;
+}
+
+/* ── Holographic shimmer ── */
+@keyframes holoShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.holo-text {
+  background: linear-gradient(
+    90deg,
+    #4ade80 0%, #38bdf8 25%, #818cf8 50%, #f472b6 75%, #4ade80 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: holoShimmer 4s linear infinite;
+}
+
+/* ── CRT flicker ── */
+@keyframes crtFlicker {
+  0%, 100% { opacity: 1; }
+  97%       { opacity: 1; }
+  97.5%     { opacity: 0.7; }
+  98%       { opacity: 1; }
+  98.5%     { opacity: 0.85; }
+  99%       { opacity: 1; }
+}
+.crt { animation: crtFlicker 8s infinite; }
