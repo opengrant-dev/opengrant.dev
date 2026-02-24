@@ -279,6 +279,82 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── ADVANCED AI TOOLS ── */}
+      <section className="px-4 py-20 border-t border-white/5">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-sm text-indigo-400 mb-4">
+              ✨ New — AI-powered deep analysis
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-3">Go beyond basic matching</h2>
+            <p className="text-slate-400">After scanning your repo, unlock 5 tools no other funding platform has.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                icon: '🧬',
+                title: 'DNA Match',
+                desc: 'Compare your project against 45+ historically funded OSS repos across 6 dimensions.',
+                badge: 'New',
+                color: 'border-purple-500/20 hover:border-purple-500/40',
+                glow: 'bg-purple-500/5',
+                path: '/dna',
+              },
+              {
+                icon: '💼',
+                title: 'Portfolio Optimizer',
+                desc: 'Build the perfect grant stack — max funding, zero conflicts between funders.',
+                badge: 'Smart',
+                color: 'border-sky-500/20 hover:border-sky-500/40',
+                glow: 'bg-sky-500/5',
+                path: '/portfolio',
+              },
+              {
+                icon: '⚡',
+                title: 'Velocity Dashboard',
+                desc: 'See exactly how many weeks until you qualify for NSF, Mozilla, Linux Foundation & more.',
+                badge: 'Predict',
+                color: 'border-amber-500/20 hover:border-amber-500/40',
+                glow: 'bg-amber-500/5',
+                path: '/velocity',
+              },
+              {
+                icon: '🗺️',
+                title: '90-Day Roadmap',
+                desc: 'AI builds a week-by-week action plan to prepare for your chosen grants — grant-specific tips included.',
+                badge: 'AI',
+                color: 'border-emerald-500/20 hover:border-emerald-500/40',
+                glow: 'bg-emerald-500/5',
+                path: '/roadmap',
+              },
+            ].map(({ icon, title, desc, badge, color, glow, path }, i) => (
+              <motion.a
+                key={title}
+                href={path}
+                className={`glass-card p-5 flex flex-col gap-3 border ${color} ${glow} transition-all cursor-pointer group`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+              >
+                <div className="flex items-start justify-between">
+                  <span className="text-3xl">{icon}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">{badge}</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-sm mb-1 group-hover:text-sky-300 transition-colors">{title}</div>
+                  <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
+                </div>
+                <div className="text-xs text-sky-400 mt-auto">Try it →</div>
+              </motion.a>
+            ))}
+          </div>
+          <div className="mt-6 text-center text-xs text-slate-600">
+            Scan your repo first, then these tools unlock automatically with your repo ID.
+          </div>
+        </div>
+      </section>
+
       {/* ── BEGINNER FAQ ── */}
       <section className="px-4 py-20 border-t border-white/5">
         <div className="mx-auto max-w-3xl">

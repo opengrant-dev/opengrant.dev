@@ -36,6 +36,10 @@ from application_writer import generate_application
 from fundability import analyze_fundability
 from badge import generate_badge_svg
 from org_scanner import scan_org
+from funded_dna import compare_repo_to_funded_dna
+from portfolio import optimize_portfolio
+from velocity import calculate_velocity
+from time_machine import generate_roadmap
 
 load_dotenv()
 
@@ -779,6 +783,272 @@ async def analyze_dependencies(body: DepsRequest):
         "medium_risk": sum(1 for r in results if r["risk"] == "medium"),
         "packages": results,
     }
+
+
+# ---------------------------------------------------------------------------
+# Funded DNA — compare repo to known funded OSS projects
+# ---------------------------------------------------------------------------
+@app.get("/api/repos/{repo_id}/dna")
+def get_dna(repo_id: str, db: Session = Depends(get_db)):
+    """
+    Compare a repo's profile against 45+ known funded OSS projects across 6 dimensions.
+    Returns top matches, DNA score, and insight about which funders back similar projects.
+    """
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    if repo.status == "pending":
+        raise HTTPException(status_code=400, detail="Analysis still in progress.")
+
+    repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+    for json_field in ("topics",):
+        val = repo_dict.get(json_field)
+        if isinstance(val, str):
+            try:
+                repo_dict[json_field] = json.loads(val)
+            except Exception:
+                repo_dict[json_field] = []
+
+    result = compare_repo_to_funded_dna(repo_dict)
+    result["repo_name"] = repo.repo_name
+    result["repo_id"] = repo_id
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Portfolio Optimizer — optimal grant stack
+# ---------------------------------------------------------------------------
+@app.get("/api/repos/{repo_id}/portfolio")
+def get_portfolio(repo_id: str, max_grants: int = 6, db: Session = Depends(get_db)):
+    """
+    Build an optimal grant application stack for a repo.
+    Uses existing match scores to maximize total potential funding while avoiding funder conflicts.
+    """
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    if repo.status == "pending":
+        raise HTTPException(status_code=400, detail="Analysis still in progress.")
+    if repo.status != "analyzed":
+        raise HTTPException(status_code=400, detail="Repository must be analyzed first. Run /api/repos/{repo_id}/matches.")
+
+    matches = (
+        db.query(Match)
+        .filter(Match.repo_id == repo_id)
+        .order_by(Match.match_score.desc())
+        .limit(30)
+        .all()
+    )
+
+    if not matches:
+        raise HTTPException(status_code=404, detail="No matches found. Run AI matching first.")
+
+    # Build match dicts
+    match_dicts = []
+    for m in matches:
+        fs = db.query(FundingSource).filter(FundingSource.id == m.funding_id).first()
+        if not fs:
+            continue
+        match_dicts.append({
+            "funding_id": m.funding_id,
+            "match_score": m.match_score,
+            "reasoning": m.reasoning,
+            "strengths": m.strengths or [],
+            "gaps": m.gaps or [],
+            "funding_source": {
+                "id": fs.id,
+                "name": fs.name,
+                "type": fs.type,
+                "min_amount": fs.min_amount,
+                "max_amount": fs.max_amount,
+                "description": fs.description,
+                "url": fs.url,
+                "category": fs.category,
+            },
+        })
+
+    result = optimize_portfolio(match_dicts, max_grants=max_grants)
+    result["repo_name"] = repo.repo_name
+    result["repo_id"] = repo_id
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Velocity Dashboard — funding progress metrics
+# ---------------------------------------------------------------------------
+@app.get("/api/repos/{repo_id}/velocity")
+def get_velocity(repo_id: str, db: Session = Depends(get_db)):
+    """
+    Calculate velocity metrics and predict when key funding milestones will be reached.
+    Returns velocity score (0-100), benchmarks vs funded project averages, and predictions.
+    """
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    if repo.status == "pending":
+        raise HTTPException(status_code=400, detail="Analysis still in progress.")
+
+    repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+    for json_field in ("topics",):
+        val = repo_dict.get(json_field)
+        if isinstance(val, str):
+            try:
+                repo_dict[json_field] = json.loads(val)
+            except Exception:
+                repo_dict[json_field] = []
+
+    result = calculate_velocity(repo_dict)
+    result["repo_name"] = repo.repo_name
+    result["repo_id"] = repo_id
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Time Machine — 90-day LLM funding roadmap
+# ---------------------------------------------------------------------------
+class RoadmapRequest(BaseModel):
+    funding_ids: list[int]
+
+
+@app.post("/api/repos/{repo_id}/roadmap")
+async def generate_roadmap_endpoint(
+    repo_id: str,
+    body: RoadmapRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a precise 90-day action plan to prepare a repo for specific funding sources.
+    Body: {"funding_ids": [1, 2, 3]}  — up to 5 funding source IDs.
+    """
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    if repo.status != "analyzed":
+        raise HTTPException(status_code=400, detail="Repository must be fully analyzed first.")
+
+    if not body.funding_ids:
+        raise HTTPException(status_code=400, detail="Provide at least one funding_id.")
+
+    # Fetch up to 5 funding sources
+    funding_sources = []
+    for fid in body.funding_ids[:5]:
+        fs = db.query(FundingSource).filter(FundingSource.id == fid).first()
+        if fs:
+            funding_sources.append({
+                "id": fs.id,
+                "name": fs.name,
+                "type": fs.type,
+                "description": fs.description,
+                "category": fs.category,
+                "focus_areas": fs.focus_areas or [],
+                "min_amount": fs.min_amount,
+                "max_amount": fs.max_amount,
+                "url": fs.url,
+            })
+
+    if not funding_sources:
+        raise HTTPException(status_code=404, detail="None of the specified funding sources were found.")
+
+    # Build repo dict
+    repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+    for json_field in ("topics",):
+        val = repo_dict.get(json_field)
+        if isinstance(val, str):
+            try:
+                repo_dict[json_field] = json.loads(val)
+            except Exception:
+                repo_dict[json_field] = []
+
+    try:
+        result = await generate_roadmap(repo_dict, funding_sources)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Roadmap generation failed: {str(e)}")
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# GitHub Trending Spotlight
+# ---------------------------------------------------------------------------
+@app.get("/api/trending")
+async def get_trending(
+    language: str = "",
+    since: str = "weekly",
+):
+    """
+    Fetch GitHub trending repositories.
+    since: daily | weekly | monthly
+    language: optional language filter (e.g. "python", "javascript")
+    """
+    import httpx
+    from datetime import timedelta
+
+    days_map = {"daily": 1, "weekly": 7, "monthly": 30}
+    days = days_map.get(since, 7)
+    cutoff = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    q = f"created:>{cutoff} stars:>5"
+    if language:
+        q += f" language:{language}"
+
+    gh_token = os.getenv("GITHUB_TOKEN", "")
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "OpenGrant/1.0",
+        **({"Authorization": f"token {gh_token}"} if gh_token else {}),
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                "https://api.github.com/search/repositories",
+                params={"q": q, "sort": "stars", "order": "desc", "per_page": 25},
+                headers=headers,
+            )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=502, detail="GitHub API error.")
+
+            data = resp.json()
+            items = data.get("items", [])
+
+            repos = []
+            for r in items:
+                # Fetch topics (included in response with mercy preview header)
+                repos.append({
+                    "id": r["id"],
+                    "full_name": r["full_name"],
+                    "name": r["name"],
+                    "owner": r["owner"]["login"],
+                    "avatar_url": r["owner"]["avatar_url"],
+                    "description": r.get("description") or "",
+                    "html_url": r["html_url"],
+                    "stars": r["stargazers_count"],
+                    "forks": r["forks_count"],
+                    "language": r.get("language") or "",
+                    "topics": r.get("topics") or [],
+                    "license": (r.get("license") or {}).get("spdx_id") or "",
+                    "created_at": r["created_at"],
+                    "updated_at": r["updated_at"],
+                    "open_issues": r["open_issues_count"],
+                    "watchers": r["watchers_count"],
+                    "homepage": r.get("homepage") or "",
+                    "github_url": r["html_url"],
+                })
+
+        return {
+            "repos": repos,
+            "total": len(repos),
+            "since": since,
+            "language": language,
+            "cutoff_date": cutoff,
+        }
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="GitHub API timed out.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Trending fetch failed: {str(e)}")
 
 
 # ---------------------------------------------------------------------------

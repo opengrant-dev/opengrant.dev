@@ -19,6 +19,7 @@ import json
 import os
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from funder_profiles import get_profile
 
 load_dotenv()
 
@@ -116,10 +117,27 @@ Write a COMPLETE, COMPELLING grant application. Make it specific to both this re
 Every section should demonstrate deep understanding of the project and why this fund is the ideal partner.
 """
 
+    # Inject funder voice profile into system prompt
+    funder_name = funding_source.get("name", "")
+    voice_profile = get_profile(funder_name)
+    system_prompt = WRITER_SYSTEM_PROMPT
+    if voice_profile:
+        voice_injection = (
+            f"\n\nFUNDER VOICE PROFILE — {funder_name}:\n"
+            f"- Tone: {voice_profile['tone']}\n"
+            f"- Emphasize: {', '.join(voice_profile['emphasize'])}\n"
+            f"- Avoid: {', '.join(voice_profile['avoid'])}\n"
+            f"- Use phrases like: {', '.join(voice_profile['key_phrases'])}\n"
+            f"Adapt your writing style to match what THIS funder responds to. "
+            f"Every section should feel written specifically for {funder_name}, "
+            f"not a generic template."
+        )
+        system_prompt = WRITER_SYSTEM_PROMPT + voice_injection
+
     response = await client.chat.completions.create(
         model=MODEL,
         messages=[
-            {"role": "system", "content": WRITER_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_msg},
         ],
         temperature=0.4,

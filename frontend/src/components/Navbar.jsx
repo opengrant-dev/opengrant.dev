@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import Logo from './Logo'
 
 const NAV_LINKS = [
   { to: '/',             label: 'Home',       icon: '🏠', tip: 'Find funding for your repo' },
@@ -7,6 +8,11 @@ const NAV_LINKS = [
   { to: '/calendar',     label: 'Deadlines',  icon: '📅', tip: 'Grant deadline calendar' },
   { to: '/org',          label: 'Org Scan',   icon: '🔍', tip: 'Scan all repos in an org' },
   { to: '/dependencies', label: 'Deps',       icon: '🗺️',  tip: 'Dependency funding map' },
+  { to: '/dna',          label: 'DNA Match',  icon: '🧬', tip: 'Compare to funded repos' },
+  { to: '/portfolio',    label: 'Portfolio',  icon: '💼', tip: 'Optimize grant stack' },
+  { to: '/velocity',     label: 'Velocity',   icon: '⚡', tip: 'Track funding progress' },
+  { to: '/roadmap',      label: 'Roadmap',    icon: '🗺️', tip: '90-day funding plan' },
+  { to: '/trending',    label: 'Trending',   icon: '🔥', tip: 'Hot repos + instant funding scan' },
 ]
 
 export default function Navbar() {
@@ -19,11 +25,9 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
-            OG
-          </div>
+          <Logo size={32} />
           <span className="font-semibold text-white group-hover:text-sky-400 transition-colors">
-            OpenGrant
+            Open<span className="text-sky-400">Grant</span>
           </span>
         </Link>
 

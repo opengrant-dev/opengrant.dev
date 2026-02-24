@@ -407,6 +407,39 @@ export default function Results() {
               />
             )}
 
+            {/* Deep Analysis Tools Strip */}
+            {isReady && (
+              <motion.div
+                key="deep-analysis"
+                className="mb-8"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                  Deep Analysis Tools
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { to: `/dna/${repoId}`,       icon: '🧬', label: 'DNA Match',   desc: 'Compare to funded repos',     color: 'from-purple-500/10 to-violet-500/5 border-purple-500/20 hover:border-purple-500/40' },
+                    { to: `/portfolio/${repoId}`,  icon: '💼', label: 'Portfolio',   desc: 'Optimize grant stack',        color: 'from-sky-500/10 to-blue-500/5 border-sky-500/20 hover:border-sky-500/40' },
+                    { to: `/velocity/${repoId}`,   icon: '⚡', label: 'Velocity',    desc: 'Track funding readiness',     color: 'from-amber-500/10 to-yellow-500/5 border-amber-500/20 hover:border-amber-500/40' },
+                    { to: `/roadmap/${repoId}`,    icon: '🗺️', label: '90-Day Plan', desc: 'AI funding roadmap',          color: 'from-emerald-500/10 to-green-500/5 border-emerald-500/20 hover:border-emerald-500/40' },
+                  ].map(({ to, icon, label, desc, color }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      className={`flex flex-col gap-1.5 p-3.5 rounded-2xl border bg-gradient-to-br ${color} transition-all group`}
+                    >
+                      <span className="text-xl leading-none">{icon}</span>
+                      <span className="font-semibold text-white text-sm group-hover:text-sky-300 transition-colors">{label}</span>
+                      <span className="text-xs text-slate-500">{desc}</span>
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* Match count header */}
             {matchesLoading && <Spinner label="Loading matches…" />}
 
