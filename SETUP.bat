@@ -55,32 +55,33 @@ if not exist "backend\.env" (
     echo [OK] Created backend\.env from template
 )
 
-REM ── 4. Check if API key is set ─────────────────────────────────────────────
+REM ── 4. API Key popup ───────────────────────────────────────────────────────
 findstr /C:"YOUR_KEY_HERE" "backend\.env" >nul 2>&1
 if not errorlevel 1 (
     echo.
-    echo  ============================================================
-    echo   ACTION REQUIRED - Set your FREE Groq API key:
+    echo  Opening API key setup...
     echo.
-    echo   1. Open: https://console.groq.com
-    echo   2. Sign up free ^> click "API Keys" ^> "Create API Key"
-    echo   3. Copy the key (starts with gsk_...)
-    echo   4. In the file that opens: replace YOUR_KEY_HERE with it
-    echo   5. Save the file (Ctrl+S) then close it
-    echo   6. Press any key here to continue
-    echo  ============================================================
+
+    powershell -NoProfile -Command ^
+        "Add-Type -AssemblyName Microsoft.VisualBasic; " ^
+        "$msg = 'Enter your FREE Groq API Key below.' + [char]13 + [char]10 + [char]13 + [char]10 + " ^
+        "       'How to get it (takes 30 seconds):' + [char]13 + [char]10 + " ^
+        "       '  1. Go to  https://console.groq.com' + [char]13 + [char]10 + " ^
+        "       '  2. Sign up free (Google login works)' + [char]13 + [char]10 + " ^
+        "       '  3. Click API Keys  >  Create API Key' + [char]13 + [char]10 + " ^
+        "       '  4. Copy the key (starts with gsk_...)' + [char]13 + [char]10 + [char]13 + [char]10 + " ^
+        "       'Paste it here:'; " ^
+        "$k = [Microsoft.VisualBasic.Interaction]::InputBox($msg, 'OpenGrant Setup', ''); " ^
+        "if ($k.Trim() -ne '') { " ^
+        "    $c = Get-Content 'backend\\.env' -Raw -Encoding UTF8; " ^
+        "    $c = $c -replace 'YOUR_KEY_HERE', $k.Trim(); " ^
+        "    [System.IO.File]::WriteAllText((Resolve-Path 'backend\\.env'), $c, [System.Text.Encoding]::UTF8); " ^
+        "    Write-Host '[OK] API key saved successfully!'; " ^
+        "} else { " ^
+        "    Write-Host '[WARNING] No key entered. Set it later in backend\.env'; " ^
+        "}"
+
     echo.
-    start "" notepad "%~dp0backend\.env"
-    pause >nul
-    echo.
-    findstr /C:"YOUR_KEY_HERE" "backend\.env" >nul 2>&1
-    if not errorlevel 1 (
-        echo  [WARNING] Key still not set. You can set it later.
-        echo  The app will not work until a valid API key is added.
-        echo.
-    ) else (
-        echo [OK] API key set!
-    )
 )
 
 REM ── 5. Install Python packages ─────────────────────────────────────────────
