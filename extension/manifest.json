@@ -1,24 +1,41 @@
 {
   "manifest_version": 3,
-  "name": "OpenGrant — GitHub Funding Copilot",
+  "name": "OpenGrant - GitHub Funding Copilot",
   "version": "2.0.0",
-  "description": "AI-powered funding sidebar for every GitHub page. Viral score, grant matching, developer profiles, bounty detection — for ALL developers, beginner to senior.",
+  "description": "AI funding sidebar for every GitHub page. Viral score, grant matching, dev profiles, bounty detection.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_scripts": [{
-    "matches": ["https://github.com/*"],
-    "js": ["content.js"],
-    "css": ["content.css"],
-    "run_at": "document_idle"
-  }],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://github.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
     "default_title": "OpenGrant Funding Copilot"
   },
-  "permissions": ["storage", "activeTab", "tabs"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
   "host_permissions": [
     "http://localhost:8765/*",
     "https://api.github.com/*"
