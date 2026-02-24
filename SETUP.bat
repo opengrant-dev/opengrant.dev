@@ -12,11 +12,8 @@ python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python not found!
     echo.
-    echo  Install Python 3.10 or newer from:
-    echo  https://python.org/downloads
-    echo.
-    echo  IMPORTANT: Check "Add Python to PATH"
-    echo  during installation!
+    echo  Install Python 3.10+ from: https://python.org/downloads
+    echo  IMPORTANT: Check "Add Python to PATH" during install!
     echo.
     pause
     exit /b 1
@@ -24,113 +21,87 @@ if errorlevel 1 (
 for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set PYVER=%%v
 echo [OK] Python %PYVER% found
 
-REM --- Warn if Python is too old ---
-for /f "tokens=1,2 delims=." %%a in ("%PYVER%") do (
-    if %%a LSS 3 (
-        echo [ERROR] Python 3.10+ required. You have %PYVER%
-        pause
-        exit /b 1
-    )
-    if %%a EQU 3 if %%b LSS 10 (
-        echo [ERROR] Python 3.10+ required. You have %PYVER%
-        echo.
-        echo Download from: https://python.org/downloads
-        pause
-        exit /b 1
-    )
-)
-
 REM --- Node.js check ---
 node --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Node.js not found!
     echo.
-    echo  Install Node.js 18 or newer from:
-    echo  https://nodejs.org
+    echo  Install Node.js 18+ from: https://nodejs.org
     echo.
     pause
     exit /b 1
 )
 for /f %%v in ('node --version 2^>^&1') do set NODEVER=%%v
 echo [OK] Node.js %NODEVER% found
-
-REM --- .env setup ---
-if not exist backend\.env (
-    if exist backend\.env.example (
-        copy backend\.env.example backend\.env >nul
-    ) else (
-        echo [ERROR] backend\.env.example not found!
-        echo Please re-download the project.
-        pause
-        exit /b 1
-    )
-    echo.
-    echo  ==========================================
-    echo   ACTION NEEDED:
-    echo   1. Open file: backend\.env
-    echo   2. Replace: your_api_key_here
-    echo   3. With your FREE Groq key from https://console.groq.com:
-    echo      https://console.groq.com
-    echo   4. Save the file
-    echo   5. Press any key here to continue
-    echo  ==========================================
-    echo.
-    start notepad backend\.env
-    pause >nul
-)
-echo [OK] Config file ready
-
-REM --- pip upgrade ---
 echo.
-echo Upgrading pip...
-python -m pip install --upgrade pip --quiet
-echo [OK] pip up to date
+
+REM --- .env setup: copy if missing ---
+if not exist backend\.env (
+    copy backend\.env.example backend\.env >nul
+)
+
+REM --- Loop until API key is actually set ---
+:check_key
+findstr /C:"YOUR_KEY_HERE" backend\.env >nul 2>&1
+if not errorlevel 1 (
+    echo.
+    echo  ==========================================
+    echo   STEP NEEDED: Add your FREE API key
+    echo.
+    echo   1. Go to: https://console.groq.com
+    echo   2. Sign up free, click "API Keys", create one
+    echo   3. Copy the key  (starts with gsk_...)
+    echo   4. In the Notepad window that opens:
+    echo      Replace  YOUR_KEY_HERE  with your key
+    echo   5. Save the file  (Ctrl+S)
+    echo   6. Close Notepad
+    echo   7. Press any key HERE to continue
+    echo  ==========================================
+    echo.
+    start /wait notepad "%~dp0backend\.env"
+    findstr /C:"YOUR_KEY_HERE" backend\.env >nul 2>&1
+    if not errorlevel 1 (
+        echo.
+        echo  [!] Key not saved yet. Please try again.
+        goto check_key
+    )
+)
+echo [OK] API key is set
 
 REM --- Python packages ---
 echo.
-echo Installing Python packages (may take 1-3 minutes)...
-echo If this fails, copy the error above and open an Issue on GitHub.
-echo.
+echo Installing Python packages (1-3 min)...
+python -m pip install --upgrade pip --quiet
 python -m pip install -r backend\requirements.txt
 if errorlevel 1 (
     echo.
-    echo [ERROR] Python package install failed!
-    echo.
-    echo Common fixes:
-    echo  1. Run as Administrator
-    echo  2. Check internet connection
-    echo  3. Try: python -m pip install -r backend\requirements.txt
-    echo.
+    echo [ERROR] Python install failed! Try running as Administrator.
     pause
     exit /b 1
 )
-echo [OK] Python packages installed
+echo [OK] Python packages done
 
 REM --- Node packages ---
 echo.
-echo Installing Node.js packages (may take 1-3 minutes)...
+echo Installing Node.js packages (1-3 min)...
 cd frontend
-call npm install
+call npm install --silent
 if errorlevel 1 (
     echo.
-    echo [ERROR] npm install failed!
-    echo.
-    echo Common fixes:
-    echo  1. Delete frontend\node_modules folder and retry
-    echo  2. Check internet connection
-    echo  3. Try running: cd frontend ^&^& npm install
-    echo.
+    echo [ERROR] npm install failed! Check internet and retry.
     cd ..
     pause
     exit /b 1
 )
 cd ..
-echo [OK] Node.js packages installed
+echo [OK] Node.js packages done
 
 echo.
 echo  ==========================================
-echo   Setup Complete!
-echo   Now double-click START.bat to launch.
+echo   Setup Complete! Launching OpenGrant...
 echo  ==========================================
 echo.
-pause
+timeout /t 2 /nobreak >nul
+
+REM --- Launch app immediately after setup ---
+call "%~dp0START.bat"
