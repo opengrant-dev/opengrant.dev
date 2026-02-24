@@ -1,0 +1,789 @@
+"""
+OpenGrant — FastAPI Backend
+==========================================
+Endpoints:
+  POST   /api/repos/submit            Submit a GitHub repo URL for analysis
+  GET    /api/repos/{repo_id}         Get repo details + analysis status
+  GET    /api/repos/{repo_id}/matches Get AI-matched funding opportunities
+  GET    /api/funding-sources         List all available funding sources
+  POST   /api/matches/details         Get detailed analysis for a single match
+  GET    /api/stats                   Platform statistics (for landing page)
+  GET    /health                      Health check
+"""
+
+import os
+import json
+from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from pydantic import BaseModel, field_validator
+from pydantic import ConfigDict
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+
+from models import init_db, get_db, Repo, FundingSource, Match
+from github_api import fetch_repo_data
+from matcher import run_matching
+from funding_db import seed_funding_sources, get_all_funding_sources
+from application_writer import generate_application
+from fundability import analyze_fundability
+from badge import generate_badge_svg
+from org_scanner import scan_org
+
+load_dotenv()
+
+# ---------------------------------------------------------------------------
+# App setup
+# ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: init DB and seed funding data
+    init_db()
+    db = next(get_db())
+    try:
+        seed_funding_sources(db)
+    finally:
+        db.close()
+    yield
+    # Shutdown (nothing to clean up)
+
+
+app = FastAPI(
+    title="OpenGrant API",
+    description="AI-powered matching between GitHub repos and funding opportunities.",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_URL, "http://localhost:3000", "http://localhost:5173", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ---------------------------------------------------------------------------
+# Pydantic schemas
+# ---------------------------------------------------------------------------
+class RepoSubmitRequest(BaseModel):
+    github_url: str
+
+    @field_validator("github_url")
+    @classmethod
+    def must_be_github(cls, v: str) -> str:
+        v = v.strip()
+        if "github.com" not in v and "/" not in v:
+            raise ValueError("Please provide a valid GitHub repository URL.")
+        return v
+
+
+class MatchDetailsRequest(BaseModel):
+    repo_id: str
+    funding_id: int
+
+
+class RepoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    repo_name: str
+    github_url: str
+    stars: int
+    forks: int
+    language: Optional[str]
+    description: Optional[str]
+    topics: list
+    status: str
+    created_at: str
+
+
+class FundingSourceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    type: str
+    min_amount: int
+    max_amount: int
+    description: str
+    url: str
+    category: str
+    tags: list
+    focus_areas: list
+    is_recurring: bool
+    deadline: Optional[str]
+
+
+class MatchResponse(BaseModel):
+    id: str
+    repo_id: str
+    funding_id: int
+    match_score: float
+    reasoning: str
+    strengths: list
+    gaps: list
+    application_tips: Optional[str]
+    funding_source: FundingSourceResponse
+
+
+# ---------------------------------------------------------------------------
+# Background task: analyze repo + run matching
+# ---------------------------------------------------------------------------
+async def _analyze_and_match(repo_id: str):
+    """
+    Background task that:
+    1. Fetches GitHub data for the repo
+    2. Runs AI matching against all funding sources
+    3. Saves results to the database
+    """
+    db = next(get_db())
+    try:
+        repo = db.query(Repo).filter(Repo.id == repo_id).first()
+        if not repo:
+            return
+
+        # 1. Fetch GitHub data
+        try:
+            gh_data = await fetch_repo_data(repo.github_url)
+        except ValueError as e:
+            repo.status = "error"
+            repo.error_message = str(e)
+            db.commit()
+            return
+        except Exception as e:
+            repo.status = "error"
+            repo.error_message = f"GitHub API error: {str(e)}"
+            db.commit()
+            return
+
+        # 2. Update repo with GitHub data
+        for field, value in gh_data.items():
+            if hasattr(repo, field) and field != "id":
+                setattr(repo, field, value)
+
+        # Parse datetime strings
+        for dt_field in ("created_at_github", "updated_at_github"):
+            val = gh_data.get(dt_field)
+            if val and isinstance(val, str):
+                try:
+                    setattr(repo, dt_field, datetime.fromisoformat(val.replace("Z", "+00:00")))
+                except Exception:
+                    pass
+
+        db.commit()
+
+        # 3. Run AI matching
+        funding_sources = get_all_funding_sources(db)
+        repo_dict = {
+            c.name: getattr(repo, c.name)
+            for c in repo.__table__.columns
+        }
+        # JSON fields stored as strings in SQLite — decode if needed
+        for json_field in ("topics",):
+            val = repo_dict.get(json_field)
+            if isinstance(val, str):
+                try:
+                    repo_dict[json_field] = json.loads(val)
+                except Exception:
+                    repo_dict[json_field] = []
+
+        matches = await run_matching(repo_dict, funding_sources)
+
+        # 4. Save matches to DB (clear old ones first)
+        db.query(Match).filter(Match.repo_id == repo_id).delete()
+        for m in matches:
+            db_match = Match(
+                repo_id=repo_id,
+                funding_id=m["funding_id"],
+                match_score=m["score"],
+                reasoning=m.get("reasoning", ""),
+                strengths=m.get("strengths", []),
+                gaps=m.get("gaps", []),
+                application_tips=m.get("application_tips", ""),
+            )
+            db.add(db_match)
+
+        repo.status = "analyzed"
+        db.commit()
+
+    except Exception as e:
+        try:
+            repo = db.query(Repo).filter(Repo.id == repo_id).first()
+            if repo:
+                repo.status = "error"
+                repo.error_message = f"Unexpected error: {str(e)}"
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/stats")
+def get_stats(db: Session = Depends(get_db)):
+    """Platform statistics for the landing page."""
+    total_repos = db.query(Repo).count()
+    analyzed = db.query(Repo).filter(Repo.status == "analyzed").count()
+    total_funding = db.query(FundingSource).filter(FundingSource.active == True).count()
+    total_matches = db.query(Match).count()
+    return {
+        "repos_submitted": total_repos,
+        "repos_analyzed": analyzed,
+        "funding_sources": total_funding,
+        "matches_made": total_matches,
+    }
+
+
+@app.post("/api/repos/submit", status_code=202)
+@limiter.limit("10/minute")
+async def submit_repo(
+    request: Request,
+    body: RepoSubmitRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Submit a GitHub repository URL for analysis.
+    Returns a repo_id immediately; analysis runs in the background.
+    Poll GET /api/repos/{repo_id} for status updates.
+    """
+    # Check if this URL was already analyzed recently (last 24h)
+    from datetime import timedelta
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    existing = (
+        db.query(Repo)
+        .filter(
+            Repo.github_url == body.github_url,
+            Repo.status == "analyzed",
+            Repo.created_at >= cutoff,
+        )
+        .first()
+    )
+    if existing:
+        return {
+            "repo_id": existing.id,
+            "status": "cached",
+            "message": "This repo was recently analyzed. Returning cached results.",
+        }
+
+    # Create a new repo record (status=pending, will be updated by background task)
+    # Do a quick URL parse to get repo_name early
+    try:
+        parts = body.github_url.rstrip("/").split("/")
+        repo_name = f"{parts[-2]}/{parts[-1]}".replace(".git", "")
+    except Exception:
+        repo_name = body.github_url
+
+    repo = Repo(
+        github_url=body.github_url,
+        repo_name=repo_name,
+        status="pending",
+    )
+    db.add(repo)
+    db.commit()
+    db.refresh(repo)
+
+    # Kick off background analysis
+    background_tasks.add_task(_analyze_and_match, repo.id)
+
+    return {
+        "repo_id": repo.id,
+        "status": "pending",
+        "message": "Analysis started. Poll /api/repos/{repo_id} for status.",
+    }
+
+
+@app.get("/api/repos/{repo_id}")
+def get_repo(repo_id: str, db: Session = Depends(get_db)):
+    """Get repo details and current analysis status."""
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+
+    return {
+        "id": repo.id,
+        "github_url": repo.github_url,
+        "repo_name": repo.repo_name,
+        "owner": repo.owner,
+        "stars": repo.stars,
+        "forks": repo.forks,
+        "language": repo.language,
+        "description": repo.description,
+        "topics": repo.topics or [],
+        "license_name": repo.license_name,
+        "contributors_count": repo.contributors_count,
+        "commit_frequency": repo.commit_frequency,
+        "homepage": repo.homepage,
+        "status": repo.status,
+        "error_message": repo.error_message,
+        "created_at": repo.created_at.isoformat() if repo.created_at else None,
+    }
+
+
+@app.get("/api/repos/{repo_id}/matches")
+def get_matches(repo_id: str, limit: int = 20, db: Session = Depends(get_db)):
+    """
+    Get AI-matched funding opportunities for a repo.
+    Returns matches sorted by score descending.
+    """
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+
+    if repo.status == "pending":
+        return {"status": "pending", "message": "Analysis in progress. Try again in a few seconds.", "matches": []}
+
+    if repo.status == "error":
+        raise HTTPException(status_code=400, detail=repo.error_message or "Analysis failed.")
+
+    matches = (
+        db.query(Match)
+        .filter(Match.repo_id == repo_id)
+        .order_by(Match.match_score.desc())
+        .limit(limit)
+        .all()
+    )
+
+    result = []
+    for m in matches:
+        fs = db.query(FundingSource).filter(FundingSource.id == m.funding_id).first()
+        if not fs:
+            continue
+        result.append({
+            "id": m.id,
+            "repo_id": m.repo_id,
+            "funding_id": m.funding_id,
+            "match_score": m.match_score,
+            "reasoning": m.reasoning,
+            "strengths": m.strengths or [],
+            "gaps": m.gaps or [],
+            "application_tips": m.application_tips,
+            "funding_source": {
+                "id": fs.id,
+                "name": fs.name,
+                "type": fs.type,
+                "min_amount": fs.min_amount,
+                "max_amount": fs.max_amount,
+                "description": fs.description,
+                "url": fs.url,
+                "category": fs.category,
+                "tags": fs.tags or [],
+                "focus_areas": fs.focus_areas or [],
+                "is_recurring": fs.is_recurring,
+                "deadline": fs.deadline,
+                "application_required": fs.application_required,
+            },
+        })
+
+    return {
+        "status": "analyzed",
+        "repo_id": repo_id,
+        "repo_name": repo.repo_name,
+        "matches": result,
+        "total": len(result),
+    }
+
+
+@app.get("/api/funding-sources")
+def list_funding_sources(
+    category: Optional[str] = None,
+    type: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    List all available funding sources.
+    Optional filters: category (platform|foundation|corporate|government|crypto|nonprofit|vc)
+                     type (grant|sponsorship|accelerator)
+    """
+    query = db.query(FundingSource).filter(FundingSource.active == True)
+    if category:
+        query = query.filter(FundingSource.category == category)
+    if type:
+        query = query.filter(FundingSource.type == type)
+
+    sources = query.order_by(FundingSource.category, FundingSource.name).all()
+
+    return {
+        "funding_sources": [
+            {
+                "id": fs.id,
+                "name": fs.name,
+                "type": fs.type,
+                "min_amount": fs.min_amount,
+                "max_amount": fs.max_amount,
+                "description": fs.description,
+                "url": fs.url,
+                "category": fs.category,
+                "tags": fs.tags or [],
+                "focus_areas": fs.focus_areas or [],
+                "is_recurring": fs.is_recurring,
+                "deadline": fs.deadline,
+                "application_required": fs.application_required,
+            }
+            for fs in sources
+        ],
+        "total": len(sources),
+        "categories": list({fs.category for fs in sources}),
+    }
+
+
+@app.post("/api/matches/details")
+def get_match_details(body: MatchDetailsRequest, db: Session = Depends(get_db)):
+    """Get detailed match analysis for a specific repo + funding source pair."""
+    match = (
+        db.query(Match)
+        .filter(Match.repo_id == body.repo_id, Match.funding_id == body.funding_id)
+        .first()
+    )
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found.")
+
+    fs = db.query(FundingSource).filter(FundingSource.id == body.funding_id).first()
+    repo = db.query(Repo).filter(Repo.id == body.repo_id).first()
+
+    return {
+        "match": {
+            "id": match.id,
+            "score": match.match_score,
+            "reasoning": match.reasoning,
+            "strengths": match.strengths or [],
+            "gaps": match.gaps or [],
+            "application_tips": match.application_tips,
+        },
+        "funding_source": {
+            "id": fs.id,
+            "name": fs.name,
+            "type": fs.type,
+            "description": fs.description,
+            "url": fs.url,
+            "category": fs.category,
+            "min_amount": fs.min_amount,
+            "max_amount": fs.max_amount,
+            "deadline": fs.deadline,
+            "eligibility": fs.eligibility or {},
+        } if fs else None,
+        "repo": {
+            "id": repo.id,
+            "repo_name": repo.repo_name,
+            "stars": repo.stars,
+            "language": repo.language,
+            "description": repo.description,
+        } if repo else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Fundability Analysis
+# ---------------------------------------------------------------------------
+@app.get("/api/repos/{repo_id}/fundability")
+def get_fundability(repo_id: str, db: Session = Depends(get_db)):
+    """Analyze a repo's fundability score and return actionable improvement tips."""
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    if repo.status == "pending":
+        raise HTTPException(status_code=400, detail="Analysis still in progress.")
+
+    repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+    for json_field in ("topics",):
+        val = repo_dict.get(json_field)
+        if isinstance(val, str):
+            try:
+                repo_dict[json_field] = json.loads(val)
+            except Exception:
+                repo_dict[json_field] = []
+
+    return analyze_fundability(repo_dict)
+
+
+# ---------------------------------------------------------------------------
+# Grant Application Writer
+# ---------------------------------------------------------------------------
+class ApplicationRequest(BaseModel):
+    funding_id: int
+
+
+@app.post("/api/repos/{repo_id}/generate-application")
+async def generate_application_endpoint(
+    repo_id: str,
+    body: ApplicationRequest,
+    db: Session = Depends(get_db),
+):
+    """Generate a complete AI-written grant application for a repo + funding source pair."""
+    repo = db.query(Repo).filter(Repo.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    if repo.status != "analyzed":
+        raise HTTPException(status_code=400, detail="Repository analysis not complete yet.")
+
+    fs = db.query(FundingSource).filter(FundingSource.id == body.funding_id).first()
+    if not fs:
+        raise HTTPException(status_code=404, detail="Funding source not found.")
+
+    # Build repo dict
+    repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+    for json_field in ("topics",):
+        val = repo_dict.get(json_field)
+        if isinstance(val, str):
+            try:
+                repo_dict[json_field] = json.loads(val)
+            except Exception:
+                repo_dict[json_field] = []
+
+    # Build funding source dict
+    fs_dict = {
+        "id": fs.id,
+        "name": fs.name,
+        "type": fs.type,
+        "description": fs.description,
+        "url": fs.url,
+        "category": fs.category,
+        "tags": fs.tags or [],
+        "focus_areas": fs.focus_areas or [],
+        "eligibility": fs.eligibility or {},
+        "min_amount": fs.min_amount,
+        "max_amount": fs.max_amount,
+    }
+
+    try:
+        application = await generate_application(repo_dict, fs_dict)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Application generation failed: {str(e)}")
+
+    return application
+
+
+# ---------------------------------------------------------------------------
+# README Badge
+# ---------------------------------------------------------------------------
+@app.get("/badge/{owner}/{repo}.svg", response_class=Response)
+def get_badge(owner: str, repo: str, db: Session = Depends(get_db)):
+    """Return a dynamic SVG badge showing funding match count for a GitHub repo."""
+    github_url_pattern = f"github.com/{owner}/{repo}"
+    repo_record = (
+        db.query(Repo)
+        .filter(Repo.github_url.contains(github_url_pattern), Repo.status == "analyzed")
+        .order_by(Repo.created_at.desc())
+        .first()
+    )
+    if not repo_record:
+        svg = generate_badge_svg(0, 0)
+    else:
+        count = db.query(Match).filter(Match.repo_id == repo_record.id).count()
+        top = (
+            db.query(Match)
+            .filter(Match.repo_id == repo_record.id)
+            .order_by(Match.match_score.desc())
+            .first()
+        )
+        svg = generate_badge_svg(count, top.match_score if top else 0)
+
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "max-age=3600", "Access-Control-Allow-Origin": "*"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# GitHub Org Scanner
+# ---------------------------------------------------------------------------
+class OrgScanRequest(BaseModel):
+    org: str
+
+
+@app.post("/api/org/scan")
+async def scan_org_endpoint(body: OrgScanRequest):
+    """Scan all public repos in a GitHub org/user and rank by fundability."""
+    try:
+        result = await scan_org(body.org)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scan failed: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Dependency Funding Map
+# ---------------------------------------------------------------------------
+class DepsRequest(BaseModel):
+    content: str        # Raw package.json or requirements.txt content
+    ecosystem: str      # "npm" or "pip"
+
+
+@app.post("/api/dependencies/analyze")
+async def analyze_dependencies(body: DepsRequest):
+    """
+    Parse a package.json or requirements.txt and check each dependency's
+    funding health on GitHub.
+    """
+    import httpx, re, json as json_mod
+
+    ecosystem = body.ecosystem.lower()
+    content   = body.content.strip()
+    packages  = []
+
+    # ── Parse package names ─────────────────────────────────────────────
+    if ecosystem == "npm":
+        try:
+            parsed = json_mod.loads(content)
+            deps   = {**parsed.get("dependencies", {}), **parsed.get("devDependencies", {})}
+            packages = list(deps.keys())[:30]
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid package.json")
+    else:  # pip
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            pkg = re.split(r"[>=<!;\[]", line)[0].strip()
+            if pkg:
+                packages.append(pkg)
+        packages = packages[:30]
+
+    if not packages:
+        raise HTTPException(status_code=400, detail="No packages found.")
+
+    results = []
+    gh_token = os.getenv("GITHUB_TOKEN", "")
+    gh_headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "FundMatcher/1.0",
+        **({"Authorization": f"token {gh_token}"} if gh_token else {}),
+    }
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        for pkg in packages:
+            github_url = None
+
+            # Resolve GitHub URL from registry
+            try:
+                if ecosystem == "npm":
+                    r = await client.get(f"https://registry.npmjs.org/{pkg}/latest")
+                    if r.status_code == 200:
+                        data   = r.json()
+                        repo   = data.get("repository", {})
+                        rawurl = repo.get("url", "") if isinstance(repo, dict) else ""
+                        match  = re.search(r"github\.com[/:]([^/]+/[^/.\s]+)", rawurl)
+                        if match:
+                            github_url = f"https://github.com/{match.group(1).removesuffix('.git')}"
+                else:
+                    r = await client.get(f"https://pypi.org/pypi/{pkg}/json")
+                    if r.status_code == 200:
+                        info   = r.json().get("info", {})
+                        urls   = info.get("project_urls") or {}
+                        for k, v in urls.items():
+                            if "github.com" in (v or ""):
+                                m = re.search(r"github\.com/([^/]+/[^/\s]+)", v)
+                                if m:
+                                    github_url = f"https://github.com/{m.group(1).rstrip('/')}"
+                                    break
+                        if not github_url:
+                            hp = info.get("home_page") or ""
+                            if "github.com" in hp:
+                                m = re.search(r"github\.com/([^/]+/[^/\s]+)", hp)
+                                if m:
+                                    github_url = f"https://github.com/{m.group(1).rstrip('/')}"
+            except Exception:
+                pass
+
+            # Fetch GitHub stats
+            stars = forks = contributors = 0
+            language = license_name = ""
+            commit_freq = 0.0
+            has_sponsors = False
+
+            if github_url:
+                try:
+                    path   = github_url.replace("https://github.com/", "")
+                    r      = await client.get(f"https://api.github.com/repos/{path}", headers=gh_headers)
+                    if r.status_code == 200:
+                        d            = r.json()
+                        stars        = d.get("stargazers_count", 0)
+                        forks        = d.get("forks_count", 0)
+                        language     = d.get("language", "")
+                        lic          = d.get("license") or {}
+                        license_name = lic.get("spdx_id", "")
+
+                    # Check GitHub Sponsors (funding.yml)
+                    fund_r = await client.get(
+                        f"https://api.github.com/repos/{path}/contents/.github/FUNDING.yml",
+                        headers=gh_headers,
+                    )
+                    has_sponsors = fund_r.status_code == 200
+                except Exception:
+                    pass
+
+            # Determine risk level
+            risk = "low"
+            risk_reasons = []
+            if stars < 100:
+                risk = "high"
+                risk_reasons.append(f"Only {stars} stars")
+            if not has_sponsors:
+                if risk != "high":
+                    risk = "medium"
+                risk_reasons.append("No funding setup")
+            if not license_name:
+                risk = "high"
+                risk_reasons.append("No license")
+
+            results.append({
+                "package": pkg,
+                "ecosystem": ecosystem,
+                "github_url": github_url,
+                "stars": stars,
+                "forks": forks,
+                "language": language,
+                "license": license_name,
+                "has_sponsors": has_sponsors,
+                "risk": risk,
+                "risk_reasons": risk_reasons,
+            })
+
+    # Sort: high risk first
+    risk_order = {"high": 0, "medium": 1, "low": 2}
+    results.sort(key=lambda x: risk_order.get(x["risk"], 3))
+
+    return {
+        "ecosystem": ecosystem,
+        "total": len(results),
+        "high_risk": sum(1 for r in results if r["risk"] == "high"),
+        "medium_risk": sum(1 for r in results if r["risk"] == "medium"),
+        "packages": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Run locally
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
