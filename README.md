@@ -16,9 +16,9 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Stars](https://img.shields.io/github/stars/ChiranjibAI/opengrant?style=social)](https://github.com/ChiranjibAI/opengrant/stargazers)
+[![Stars](https://img.shields.io/github/stars/Chiranjib/opengrant?style=social)](https://github.com/Chiranjib/opengrant/stargazers)
 
-**[View Demo](https://github.com/ChiranjibAI/opengrant) · [Report Bug](https://github.com/ChiranjibAI/opengrant/issues) · [Request Feature](https://github.com/ChiranjibAI/opengrant/issues)**
+**[View Demo](https://github.com/Chiranjib/opengrant) · [Report Bug](https://github.com/Chiranjib/opengrant/issues) · [Request Feature](https://github.com/Chiranjib/opengrant/issues)**
 
 </div>
 
@@ -142,7 +142,7 @@ python opengrant.py bounties --query "label:bounty"
 python opengrant.py write https://github.com/facebook/react 7
 
 # Launch everything (UI + API)
-python opengrant.py serve
+./OpenGrant serve
 ```
 
 ---
@@ -235,7 +235,7 @@ Any contribution is **greatly appreciated**.
 **Easy first contributions:**
 - 💰 Add a funding source you know in `backend/funding_db.py`
 - 🌍 Translate HOW_TO_USE.txt to your language
-- 🐛 Report a bug via [Issues](https://github.com/ChiranjibAI/opengrant/issues)
+- 🐛 Report a bug via [Issues](https://github.com/Chiranjib/opengrant/issues)
 - ⭐ Star the repo to help others discover it
 
 ```bash
@@ -259,6 +259,6 @@ MIT License — free to use, modify, and distribute. See [LICENSE](LICENSE).
 
 **If OpenGrant helped you find funding, please ⭐ star this repo — it helps the whole OSS community discover it!**
 
-Built with ❤️ by [ChiranjibAI](https://github.com/ChiranjibAI) · Open to all contributions
+Built with ❤️ by [Chiranjib](https://github.com/Chiranjib) · Open to all contributions
 
 </div>

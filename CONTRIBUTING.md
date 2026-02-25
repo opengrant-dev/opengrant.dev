@@ -27,7 +27,7 @@ Open `backend/funding_db.py` and add to `FUNDING_SOURCES`:
 ## Development Setup
 
 ```bash
-git clone https://github.com/ChiranjibAI/opengrant
+git clone https://github.com/Chiranjib/opengrant
 cd opengrant
 
 # Backend
@@ -44,7 +44,7 @@ npm install && npm run dev
 ## Pull Request Steps
 
 ```bash
-git fork https://github.com/ChiranjibAI/opengrant
+git fork https://github.com/Chiranjib/opengrant
 git checkout -b feature/your-feature
 # make your changes
 git commit -m "feat: describe your change"
@@ -61,14 +61,18 @@ git push origin feature/your-feature
 
 ## Report a Bug
 
-Open an [Issue](https://github.com/ChiranjibAI/opengrant/issues/new/choose) and select the **Bug Report** template. Please include:
+Open an [Issue](https://github.com/Chiranjib/opengrant/issues/new/choose) and select the **Bug Report** template. Please include:
 - What happened vs what you expected
 - Steps to reproduce
+- Relevant logs or screenshots
+- Relevant logs or screenshots
+- Relevant logs or screenshots
+- Relevant logs or screenshots
 - Relevant logs or screenshots
 
 ## Request a Feature
 
-Open an [Issue](https://github.com/ChiranjibAI/opengrant/issues/new/choose) and select the **Feature Request** template.
+Open an [Issue](https://github.com/Chiranjib/opengrant/issues/new/choose) and select the **Feature Request** template.
 
 ## License
 

@@ -2,38 +2,59 @@ import os
 import sys
 import json
 import asyncio
-from typing import Optional
+import time
+import random
+from typing import Optional, List
 from datetime import datetime
 
-# Add backend to path so we can import modules
+# Add backend to path
 sys.path.append(os.path.join(os.getcwd(), "backend"))
 
 try:
     import typer
-    from rich.console import Console
-    from rich.table import Table
+    import questionary
+    from rich.console import Console, Group
+    from rich.layout import Layout
     from rich.panel import Panel
+    from rich.table import Table
+    from rich.text import Text
+    from rich.live import Live
     from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.rule import Rule
+    from rich.columns import Columns
     from rich import print as rprint
 except ImportError:
-    print("Error: 'typer' and 'rich' are required for the CLI. Run: pip install typer rich")
+    print("Error: Missing dependencies. Run: pip install typer rich questionary")
     sys.exit(1)
 
 from dotenv import load_dotenv
 load_dotenv(os.path.join("backend", ".env"))
 
-# Lazy imports for backend logic
+# --- Backend Feature Bridges ---
 def get_logic():
     from backend.matcher import run_matching
     from backend.github_api import fetch_repo_data
     from backend.monetization import fetch_live_bounties, generate_monetization_strategy
     from backend.fundability import analyze_fundability
-    return fetch_repo_data, run_matching, fetch_live_bounties, generate_monetization_strategy, analyze_fundability
+    from backend.time_machine import generate_roadmap
+    from backend.portfolio import optimize_portfolio
+    from backend.funding_db import FUNDING_SOURCES
+    return {
+        "fetch_repo_data": fetch_repo_data,
+        "run_matching": run_matching,
+        "fetch_live_bounties": fetch_live_bounties,
+        "generate_monetization_strategy": generate_monetization_strategy,
+        "analyze_fundability": analyze_fundability,
+        "generate_roadmap": generate_roadmap,
+        "optimize_portfolio": optimize_portfolio,
+        "funding_sources": FUNDING_SOURCES
+    }
 
-app = typer.Typer(help="OpenGrant CLI - Find funding and monetize your OSS projects.")
+app = typer.Typer(help="OpenGrant 2.0 - Developed by Chiranjib")
 console = Console()
 
-ASCII_ART = """
+# --- Aesthetic Assets ---
+ASCII_LOGO = """
 [bold cyan]  ██████╗ ██████╗ ███████╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███╗   ██╗████████╗[/bold cyan]
 [bold cyan] ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝ ██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝[/bold cyan]
 [bold blue] ██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║  ███╗██████╔╝███████║██╔██╗ ██║   ██║   [/bold blue]
@@ -42,276 +63,237 @@ ASCII_ART = """
 [bold magenta]  ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   [/bold magenta]
 """
 
-def print_header():
-    from rich.columns import Columns
-    from rich.console import Group
-    from rich.text import Text
-
-    # Header section
-    console.print(ASCII_ART, justify="center")
+def glitch_splash():
+    """Hacker-style animated splash screen."""
+    os.system('cls' if os.name == 'nt' else 'clear')
+    frames = ["[bold cyan]INITIALIZING...[/bold cyan]", "[bold blue]CONNECTING...[/bold blue]", "[bold magenta]OPTIMIZING...[/bold magenta]"]
+    for _ in range(3):
+        for frame in frames:
+            console.print(ASCII_LOGO, justify="center")
+            console.print(f"\n[bold green]>>> {frame}[/bold green]", justify="center")
+            time.sleep(0.1)
+            os.system('cls' if os.name == 'nt' else 'clear')
     
-    header_info = Text.assemble(
-        (" The AI-Powered Open Source Funding Discovery Platform ", "bold white on blue"),
-        ("\nCreated by ChiranjibAI | Empowering developers worldwide.", "italic dim")
-    )
-    console.print(header_info, justify="center")
-    console.print("\n")
+    # Final splash
+    console.print(ASCII_LOGO, justify="center")
+    console.print("[bold white on blue] THE ULTIMATE OSS FUNDING OS [/bold white on blue]", justify="center")
+    console.print("[italic dim]Founder & Lead Architect: Chiranjib[/italic dim]", justify="center")
+    console.print("\n" + "="*80 + "\n", style="dim")
+
+def print_header():
+    console.print(ASCII_LOGO, justify="center")
+    console.print("[bold cyan]Author: Chiranjib | Version: 2.0 (Hacker Edition)[/bold cyan]", justify="center")
+    console.print("-" * console.width, style="blue dim")
+
+def hacker_typing(text: str, delay: float = 0.01):
+    """Prints text with a typing effect."""
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()
+
+# --- Feature Runners ---
+
+def run_scan(url: str):
+    logic = get_logic()
+    try:
+        with Progress(
+            SpinnerColumn("dots12"),
+            TextColumn("[bold cyan]{task.description}"),
+            transient=True,
+        ) as progress:
+            progress.add_task(description="[HACKER] Intercepting Repository Data...", total=None)
+            repo_data = asyncio.run(logic["fetch_repo_data"](url))
+            
+            progress.add_task(description="[HACKER] Calculating Synergy Matrices...", total=None)
+            matches = asyncio.run(logic["run_matching"](repo_data, logic["funding_sources"]))
+            
+            progress.add_task(description="[HACKER] Compiling Fundability Score...", total=None)
+            score_data = logic["analyze_fundability"](repo_data)
+
+        # Dashboard Output
+        layout = Layout()
+        layout.split_column(
+            Layout(name="header", size=3),
+            Layout(name="body", ratio=1)
+        )
+        layout["body"].split_row(
+            Layout(name="metrics", ratio=1),
+            Layout(name="matches", ratio=2)
+        )
+
+        metrics_table = Table(title="[bold yellow]CORE METRICS[/bold yellow]", border_style="yellow")
+        metrics_table.add_column("Key", style="cyan")
+        metrics_table.add_column("Value", style="bold")
+        metrics_table.add_row("Health Grade", f"[bold green]{score_data['grade']}[/bold green]")
+        metrics_table.add_row("Power Score", f"{score_data['total_score']}/100")
+        metrics_table.add_row("Stars", str(repo_data.get('stars', 0)))
+        metrics_table.add_row("Commits/Wk", f"{repo_data.get('commit_frequency', 0):.1f}")
+
+        matches_table = Table(title="[bold green]TOP FUNDING OPPORTUNITIES[/bold green]", border_style="green")
+        matches_table.add_column("ID", style="dim")
+        matches_table.add_column("Funder", style="bold")
+        matches_table.add_column("Level", justify="right")
+        matches_table.add_column("Amount", style="yellow")
+
+        for i, m in enumerate(matches[:8]):
+            fs = m.get('funding', {})
+            matches_table.add_row(
+                str(i+1),
+                fs.get('name', 'N/A'),
+                f"{m.get('score', 0)}%",
+                f"${fs.get('max_amount', 0):,}"
+            )
+
+        console.print(Panel(metrics_table, title="Diagnostic", border_style="cyan"), justify="center")
+        console.print(Panel(matches_table, title="Matches", border_style="green"))
+        
+    except Exception as e:
+        console.print(Panel(f"[bold red]EXECUTION ABORTED:[/bold red] {e}", border_style="red"))
+
+def run_roadmap(url: str):
+    logic = get_logic()
+    try:
+        with console.status("[bold magenta]Predicting Funding Time-Travel Roadmap...") as status:
+            repo_data = asyncio.run(logic["fetch_repo_data"](url))
+            matches = asyncio.run(logic["run_matching"](repo_data, logic["funding_sources"]))
+            roadmap = asyncio.run(logic["generate_roadmap"](repo_data, [m['funding'] for m in matches[:3]]))
+
+        console.print(Panel(f"[bold cyan]ROADMAP: {repo_data['repo_name']}[/bold cyan]", subtitle="Created by Chiranjib"))
+        
+        for ms in roadmap.get('milestones', []):
+            table = Table(title=f"[bold yellow]{ms['week']}: {ms['theme']}[/bold yellow]", show_header=True, header_style="bold magenta")
+            table.add_column("Proposed Action", style="white")
+            table.add_column("Impact", style="dim italic")
+            for action in ms.get('actions', []):
+                table.add_row(action['action'], action['impact'])
+            console.print(table)
+            console.print("\n")
+            
+        console.print(f"[bold red]CRITICAL FIXES:[/bold red] {', '.join(roadmap.get('red_flags', [])) or 'None'}")
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+
+def run_portfolio(url: str):
+    logic = get_logic()
+    try:
+        with console.status("[bold yellow]Optimizing Grant Stack Portfolio...") as status:
+            repo_data = asyncio.run(logic["fetch_repo_data"](url))
+            matches = asyncio.run(logic["run_matching"](repo_data, logic["funding_sources"]))
+            # Convert matches to logic format
+            clean_matches = []
+            for m in matches:
+                clean_matches.append({
+                    "funding_score": m['score'],
+                    "match_score": m['score'],
+                    "funding_source": m['funding']
+                })
+            portfolio = logic["optimize_portfolio"](clean_matches)
+
+        console.print(Panel(f"[bold blue]OPTIMAL GRANT STACK - TOTAL POTENTIAL: ${portfolio['total_potential_usd']:,}[/bold blue]"))
+        
+        table = Table(show_header=True, header_style="bold cyan")
+        table.add_column("Order", style="dim")
+        table.add_column("Grant Name", style="bold")
+        table.add_column("Match Score", justify="right")
+        table.add_column("Effort", style="yellow")
+
+        for i, g in enumerate(portfolio['optimal_stack']):
+            table.add_row(str(i+1), g['name'], f"{g['score']}%", f"{g['effort_weeks']} wks")
+        
+        console.print(table)
+        console.print("\n[bold yellow]Strategy Notes:[/bold yellow]")
+        for note in portfolio.get('strategy_notes', []):
+            console.print(f" > {note}")
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+
+# --- Main Entry ---
 
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
-    """
-    Main entry point for OpenGrant CLI. Starts interactive menu if no command is given.
-    """
     if ctx.invoked_subcommand is not None:
         return
 
-    try:
-        import questionary
-    except ImportError:
-        console.print("[yellow]Notice: 'questionary' is required for the interactive menu. Run: pip install questionary[/yellow]")
-        print_header()
-        # Fallback to help
-        console.print("[bold yellow]Available Commands:[/bold yellow]")
-        console.print("  [bold green]scan[/bold green] [dim]<url>[/dim]      - Scan repo for funding matches")
-        console.print("  [bold green]monetize[/bold green] [dim]<url>[/dim]  - Generate AI monetization strategy")
-        console.print("  [bold green]bounties[/bold green]         - Search live paid bounties")
-        console.print("  [bold green]write[/bold green] [dim]<url> <id>[/dim] - Draft a full grant application")
-        console.print("  [bold green]serve[/bold green]            - Start full-stack UI & API")
-        return
-
+    glitch_splash()
+    
     while True:
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print_header()
-        
         choice = questionary.select(
-            "What would you like to do?",
+            "CHIRANJIB COMMAND CENTER // SELECT ACTION:",
             choices=[
-                "🔍 Scan Repository (Grants Matching)",
-                "💰 Generate Monetization Strategy",
-                "🎯 Search Live Bounties",
-                "📝 Draft Grant Application",
-                "🌐 Launch Web Dashboard",
-                "❌ Exit"
+                "📡 FULL SYSTEM SCAN (Grants + Metrics)",
+                "📅 GENERATE 90-DAY ROADMAP (Calendar)",
+                "💼 OPTIMIZE GRANT PORTFOLIO",
+                "🎯 SEARCH LIVE BOUNTIES",
+                "📝 DRAFT PRO APPLICATION",
+                "💰 GENERATE MONETIZATION STRATEGY",
+                "🌐 DEPLOY WEB INTERFACE",
+                "❌ SHUTDOWN"
             ],
             style=questionary.Style([
-                ('qmark', 'fg:#673ab7 bold'),
-                ('question', 'bold'),
-                ('answer', 'fg:#f44336 bold'),
-                ('pointer', 'fg:#673ab7 bold'),
-                ('highlighted', 'fg:#673ab7 bold'),
-                ('selected', 'fg:#cc2787'),
-                ('separator', 'fg:#cc5454'),
-                ('instruction', ''),
-                ('text', ''),
-                ('disabled', 'fg:#858585 italic')
+                ('pointer', 'fg:#00ff00 bold'),
+                ('highlighted', 'fg:#00ffff bold'),
+                ('selected', 'fg:#ff00ff'),
+                ('question', 'fg:#ffffff bold'),
+                ('answer', 'fg:#ffffff bold')
             ])
         ).ask()
 
-        if choice == "🔍 Scan Repository (Grants Matching)":
-            url = questionary.text("Enter GitHub Repository URL:").ask()
-            if url: scan(url)
-        elif choice == "💰 Generate Monetization Strategy":
-            url = questionary.text("Enter GitHub Repository URL:").ask()
-            if url: monetize(url)
-        elif choice == "🎯 Search Live Bounties":
-            query = questionary.text("Search Query (default: label:bounty):", default="label:bounty label:\"help wanted\" state:open").ask()
-            if query: bounties(query)
-        elif choice == "📝 Draft Grant Application":
-            url = questionary.text("Enter GitHub Repository URL:").ask()
+        if choice == "📡 FULL SYSTEM SCAN (Grants + Metrics)":
+            url = questionary.text("REPOSITORY URL:").ask()
+            if url: run_scan(url)
+        elif choice == "📅 GENERATE 90-DAY ROADMAP (Calendar)":
+            url = questionary.text("REPOSITORY URL:").ask()
+            if url: run_roadmap(url)
+        elif choice == "💼 OPTIMIZE GRANT PORTFOLIO":
+            url = questionary.text("REPOSITORY URL:").ask()
+            if url: run_portfolio(url)
+        elif choice == "🎯 SEARCH LIVE BOUNTIES":
+            query = questionary.text("QUERY:", default="label:bounty").ask()
+            if query:
+                from backend.monetization import fetch_live_bounties
+                bounties = asyncio.run(fetch_live_bounties(query))
+                table = Table(title="LIVE BOUNTIES", border_style="magenta")
+                table.add_column("Title", style="white")
+                table.add_column("Amount", style="green")
+                for b in bounties[:10]:
+                    table.add_row(b['title'][:40], f"${b['amount']}")
+                console.print(table)
+        elif choice == "📝 DRAFT PRO APPLICATION":
+            url = questionary.text("REPOSITORY URL:").ask()
             if url:
-                f_id = questionary.text("Enter Funding ID (from scan results):").ask()
-                if f_id: write(url, int(f_id))
-        elif choice == "🌐 Launch Web Dashboard":
-            serve()
+                f_id = questionary.text("FUNDING ID:").ask()
+                if f_id:
+                    # Logic from old write command
+                    from backend.application_writer import generate_application
+                    from backend.funding_db import FUNDING_SOURCES
+                    from backend.github_api import fetch_repo_data
+                    repo_data = asyncio.run(fetch_repo_data(url))
+                    fs = FUNDING_SOURCES[int(f_id)-1]
+                    app_json = asyncio.run(generate_application(repo_data, fs))
+                    console.print(Panel(json.dumps(app_json, indent=2), title="Draft Generated", border_style="green"))
+        elif choice == "💰 GENERATE MONETIZATION STRATEGY":
+            url = questionary.text("REPOSITORY URL:").ask()
+            if url:
+                # Logic from old monetize command
+                from backend.monetization import generate_monetization_strategy
+                from backend.github_api import fetch_repo_data
+                repo_data = asyncio.run(fetch_repo_data(url))
+                strategy = asyncio.run(generate_monetization_strategy(repo_data))
+                console.print(Panel(str(strategy.get('fundingYml', 'N/A')), title="Monetization Strategy", border_style="blue"))
+        elif choice == "🌐 DEPLOY WEB INTERFACE":
+            console.print("[bold green]DEPLOYING SERVERS...[/bold green]")
+            import subprocess
+            if os.name == 'nt': subprocess.Popen(["cmd", "/c", "START.bat"])
+            else: subprocess.Popen(["sh", "./START.bat"])
             break
-        elif choice == "❌ Exit":
-            console.print("[bold cyan]Goodbye! See you on GitHub @chiranjibai[/bold cyan]")
+        elif choice == "❌ SHUTDOWN":
+            console.print("[bold cyan]COMMAND CENTER OFFLINE. GOODBYE CHIRANJIB.[/bold cyan]")
             break
         
-        input("\nPress Enter to return to menu...")
-
-@app.command()
-def scan(url: str):
-    """Scan a repository and find funding matches."""
-    print_header()
-    fetch_repo_data, run_matching, _, _, analyze_fundability = get_logic()
-    
-    try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            transient=True,
-        ) as progress:
-            progress.add_task(description="Fetching repository data...", total=None)
-            repo_data = asyncio.run(fetch_repo_data(url))
-            
-            if "error" in repo_data:
-                console.print(f"[bold red]Error:[/bold red] {repo_data['error']}")
-                raise typer.Exit(1)
-
-            progress.add_task(description="Analyzing funding matches...", total=None)
-            from backend.funding_db import FUNDING_SOURCES
-            for i, fs in enumerate(FUNDING_SOURCES):
-                if "id" not in fs:
-                    fs["id"] = i + 1
-                    
-            matches = asyncio.run(run_matching(repo_data, FUNDING_SOURCES))
-            
-            progress.add_task(description="Calculating fundability score...", total=None)
-            score_data = analyze_fundability(repo_data)
-
-        # UI Output
-        console.print(Panel(f"[bold green]Analysis Complete for {repo_data['repo_name']}[/bold green]"))
-        
-        score_table = Table(title="Fundability Dashboard")
-        score_table.add_column("Metric", style="cyan")
-        score_table.add_column("Value", style="magenta")
-        score_table.add_row("Overall Grade", f"[bold]{score_data['grade']}[/bold] ({score_data['total_score']}/100)")
-        score_table.add_row("Stars", str(repo_data.get('stars', 0)))
-        score_table.add_row("Issues Found", str(len(matches)))
-        console.print(score_table)
-
-        match_table = Table(title="Top Funding Matches")
-        match_table.add_column("Source", style="green")
-        match_table.add_column("Match %", justify="right")
-        match_table.add_column("Amount", style="yellow")
-        match_table.add_column("Deadline", style="dim")
-
-        for match in matches[:10]:
-            fs = match.get('funding', {})
-            match_table.add_row(
-                fs.get('name', 'Unknown'),
-                f"{match.get('score', 0)}%",
-                fs.get('amount_display') or (f"${fs['max_amount']:,}" if fs.get('max_amount') else "Variable"),
-                fs.get('deadline', 'Rolling')
-            )
-        console.print(match_table)
-        rprint(f"\n[dim]Run [bold]python opengrant.py serve[/bold] to see the full list.[/dim]")
-
-    except Exception as e:
-        if "rate_limit" in str(e).lower():
-            console.print(Panel("[bold red]AI Rate Limit Exceeded[/bold red]\nYour AI provider (Groq/OpenAI) has reached its daily limit.\nPlease try again in a few minutes or upgrade your API tier.", border_style="red", title="API Error"))
-        else:
-            console.print(f"[bold red]Unexpected Error:[/bold red] {e}")
-
-@app.command()
-def bounties(query: str = "label:bounty label:\"help wanted\" state:open"):
-    """Fetch live paid bounties from GitHub."""
-    print_header()
-    _, _, fetch_live_bounties, _, _ = get_logic()
-    
-    with console.status("[bold green]Searching for bounties...") as status:
-        bounties_list = asyncio.run(fetch_live_bounties(query))
-
-    table = Table(title=f"Live Bounties for: {query}")
-    table.add_column("Title", style="cyan", no_wrap=False)
-    table.add_column("Repo", style="magenta")
-    table.add_column("Amount", style="green")
-    table.add_column("Platform", style="dim")
-
-    for b in bounties_list[:15]:
-        table.add_row(
-            b['title'][:50] + "..." if len(b['title']) > 50 else b['title'],
-            b['repo'],
-            f"${b['amount']}",
-            b['platform']
-        )
-    console.print(table)
-
-@app.command()
-def monetize(url: str):
-    """Generate an AI monetization strategy for a repository."""
-    print_header()
-    fetch_repo_data, _, _, generate_monetization_strategy, _ = get_logic()
-    
-    try:
-        with console.status("[bold yellow]Generating AI Strategy...") as status:
-            repo_data = asyncio.run(fetch_repo_data(url))
-            if "error" in repo_data:
-                console.print(f"[bold red]Error:[/bold red] {repo_data['error']}")
-                return
-            
-            strategy = asyncio.run(generate_monetization_strategy(repo_data))
-
-        console.print(Panel.fit("[bold green]AI Monetization Strategy[/bold green]"))
-        
-        if not strategy or not isinstance(strategy, dict):
-            console.print("[yellow]Warning: AI strategy was empty or invalid. Using defaults.[/yellow]")
-            strategy = {}
-
-        console.print("\n[bold]FUNDING.yml Suggestion:[/bold]")
-        console.print(Panel(str(strategy.get('fundingYml') or 'N/A'), border_style="blue"))
-        
-        console.print("\n[bold]README Support Snippet:[/bold]")
-        console.print(Panel(str(strategy.get('readmeSnippet') or 'N/A'), border_style="magenta"))
-        
-        console.print("\n[bold]Expert Tips:[/bold]")
-        tips = strategy.get('tips') or ["Enable GitHub Sponsors", "Add a FUNDING.yml file", "Look for grants"]
-        for tip in tips:
-            if tip:
-                console.print(f" • {tip}")
-    except Exception as e:
-        if "rate_limit" in str(e).lower():
-            console.print(Panel("[bold red]AI Rate Limit Exceeded[/bold red]\nShowing default monetization strategy instead...", border_style="yellow"))
-            # Fallback
-            console.print(f"\n • Enable GitHub Sponsors\n • Add a FUNDING.yml file\n • Link your Patreon")
-        else:
-            console.print(f"[bold red]Unexpected Error:[/bold red] {e}")
-
-@app.command()
-def write(url: str, funding_id: int):
-    """Generate a complete grant application for a repository and funding source."""
-    print_header()
-    fetch_repo_data, _, _, _, _ = get_logic()
-    from backend.application_writer import generate_application
-    from backend.funding_db import FUNDING_SOURCES
-    
-    try:
-        with console.status("[bold blue]Drafting Grant Application...") as status:
-            repo_data = asyncio.run(fetch_repo_data(url))
-            if "error" in repo_data:
-                console.print(f"[bold red]Error:[/bold red] {repo_data['error']}")
-                return
-                
-            if funding_id < 1 or funding_id > len(FUNDING_SOURCES):
-                console.print(f"[bold red]Error:[/bold red] Funding ID {funding_id} not found.")
-                return
-                
-            funding_source = FUNDING_SOURCES[funding_id - 1]
-            funding_source["id"] = funding_id
-            application = asyncio.run(generate_application(repo_data, funding_source))
-
-        if "error" in application:
-            console.print(f"[bold red]Error:[/bold red] {application['error']}")
-            return
-
-        console.print(Panel(f"[bold green]Application Draft Ready for {funding_source['name']}[/bold green]"))
-        filename = f"application_{repo_data['repo_name'].replace('/', '_')}_{funding_id}.json"
-        with open(filename, "w") as f:
-            json.dump(application, f, indent=2)
-            
-        console.print(f"\n[cyan]Executive Summary:[/cyan]\n{application.get('executive_summary', 'N/A')}")
-        console.print(f"\n[bold green]Full JSON saved to: {filename}[/bold green]")
-    except Exception as e:
-        if "rate_limit" in str(e).lower():
-            console.print(Panel("[bold red]AI Rate Limit Exceeded[/bold red]\nAI writer is currently busy. Please try again later.", border_style="red"))
-        else:
-            console.print(f"[bold red]Unexpected Error:[/bold red] {e}")
-
-@app.command()
-def serve():
-    """Start both backend and frontend servers."""
-    console.print("[bold green]Starting OpenGrant Full Stack...[/bold green]")
-    import subprocess
-    
-    if os.name == 'nt': # Windows
-        subprocess.Popen(["cmd", "/c", "START.bat"])
-    else: # Mac/Linux
-        subprocess.Popen(["sh", "./START.bat"])
-    
-    console.print("[bold]Servers launched in separate windows.[/bold]")
-    console.print("API: [blue]http://localhost:8765/docs[/blue]")
-    console.print("UI:  [blue]http://localhost:5173[/blue]")
+        input("\n[bold green]>>> SYSTEM READY. PRESS ENTER TO RETURN TO MENU...[/bold green]")
+        os.system('cls' if os.name == 'nt' else 'clear')
 
 if __name__ == "__main__":
     app()
