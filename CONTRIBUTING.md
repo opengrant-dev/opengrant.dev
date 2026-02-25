@@ -1,79 +1,182 @@
 # Contributing to OpenGrant
 
-Thank you for your interest! OpenGrant gets better with every new funding source added and every bug fixed.
+Thank you for your interest in contributing to OpenGrant! We welcome all kinds of contributions, from bug reports to feature requests to code improvements.
 
-## Easiest Way — Add a Funding Source
+## 🚀 Getting Started
 
-Open `backend/funding_db.py` and add to `FUNDING_SOURCES`:
+### Prerequisites
+- Git
+- Python 3.10+
+- Node.js 18+
+- GitHub account
 
-```python
-{
-    "name": "Your Grant Name",
-    "type": "grant",            # grant | sponsorship | accelerator | bounty | fellowship | hackathon
-    "min_amount": 5000,
-    "max_amount": 50000,
-    "description": "What this fund supports and who it's for.",
-    "url": "https://fund-website.com/apply",
-    "category": "foundation",   # platform | foundation | corporate | government | crypto | nonprofit
-    "tags": ["keyword1", "keyword2"],
-    "eligibility": {"location": "global", "type": "open source project"},
-    "focus_areas": ["any"],
-    "is_recurring": False,
-    "application_required": True,
-    "deadline": "Rolling",
-},
+### Local Setup
+
+1. **Fork the repository**
+   ```bash
+   # Go to https://github.com/opengrant-dev/opengrant.dev
+   # Click "Fork" button
+   ```
+
+2. **Clone your fork**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/opengrant.dev.git
+   cd opengrant.dev
+   ```
+
+3. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+4. **Set up backend**
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/Scripts/activate  # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Edit .env and add your LLM_API_KEY
+   ```
+
+5. **Set up frontend**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+6. **Start development servers**
+   ```bash
+   # Terminal 1 - Backend
+   cd backend
+   python -m uvicorn main:app --reload --host 0.0.0.0 --port 8765
+
+   # Terminal 2 - Frontend
+   cd frontend
+   npm run dev
+   ```
+
+7. **Visit** http://localhost:5173
+
+## 📝 Making Changes
+
+### Code Style
+- **Python**: Follow PEP 8 using Black formatter
+  ```bash
+  pip install black
+  black backend/
+  ```
+
+- **JavaScript**: ESLint configuration provided
+  ```bash
+  cd frontend
+  npm run lint
+  ```
+
+### Commit Messages
+Write clear commit messages:
+```
+feat: add new funding source for Rust projects
+^    ^
+|    └─ summary in lower case
+└─ type: feat, fix, docs, style, refactor, test, chore
 ```
 
-## Development Setup
-
+### Testing
+Before submitting PR:
 ```bash
-git clone https://github.com/Chiranjib/opengrant
-cd opengrant
-
 # Backend
 cd backend
-cp .env.example .env   # add your API key
-pip install -r requirements.txt
-python main.py
+python -m pytest  # if tests exist
 
-# Frontend (new terminal)
-cd ../frontend
-npm install && npm run dev
+# Frontend
+cd frontend
+npm run lint
+npm run build
 ```
 
-## Pull Request Steps
+## 🔐 Security
 
-```bash
-git fork https://github.com/Chiranjib/opengrant
-git checkout -b feature/your-feature
-# make your changes
-git commit -m "feat: describe your change"
-git push origin feature/your-feature
-# Open PR on GitHub
-```
+Found a security vulnerability? **Please don't create a public issue.**
+- Email: ChiranjibAI@users.noreply.github.com
+- Subject: "Security Report: [brief description]"
 
-## Guidelines
+## 📋 Pull Request Process
 
-- Keep PRs focused — one feature or fix per PR
-- Test locally before submitting
-- Only add funding sources with accurate, verifiable info
-- Follow existing code style
+1. **Push your branch**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
 
-## Report a Bug
+2. **Create Pull Request**
+   - Go to https://github.com/opengrant-dev/opengrant.dev
+   - Click "New Pull Request"
+   - Fill in the template
+   - Describe your changes clearly
 
-Open an [Issue](https://github.com/Chiranjib/opengrant/issues/new/choose) and select the **Bug Report** template. Please include:
-- What happened vs what you expected
+3. **PR Requirements**
+   - [ ] Code follows project style
+   - [ ] All tests pass
+   - [ ] No new warnings in console
+   - [ ] Changes documented
+   - [ ] Commit messages are clear
+   - [ ] No API keys/secrets in code
+
+4. **Review Process**
+   - Maintainers will review within 48 hours
+   - We may request changes
+   - Once approved, PR will be merged
+
+## 🎯 What to Contribute
+
+### Good First Issues
+- Bug fixes
+- Documentation improvements
+- Test coverage
+- Small feature additions
+- UI/UX improvements
+
+### Before Starting Major Work
+- Open a **discussion** or **issue** first
+- Describe what you want to build
+- Get feedback from maintainers
+- Avoids duplicate work
+
+## 📚 Documentation
+
+All documentation should be:
+- Clear and concise
+- Include examples
+- Updated when code changes
+
+**Files to update**:
+- `README.md` - Main documentation
+- `SECURITY.md` - Security procedures
+- Code comments - For complex logic
+
+## 🐛 Reporting Bugs
+
+Include:
+- Clear title and description
 - Steps to reproduce
-- Relevant logs or screenshots
-- Relevant logs or screenshots
-- Relevant logs or screenshots
-- Relevant logs or screenshots
-- Relevant logs or screenshots
+- Expected vs actual behavior
+- Screenshots (if applicable)
+- System info (OS, Python/Node version)
 
-## Request a Feature
+## 💡 Feature Requests
 
-Open an [Issue](https://github.com/Chiranjib/opengrant/issues/new/choose) and select the **Feature Request** template.
+Include:
+- What problem does it solve?
+- Use case / example
+- Proposed solution
+- Alternative approaches considered
 
-## License
+## 📞 Questions?
 
-By contributing, you agree your work will be under the MIT License.
+- **Discussions**: GitHub Discussions tab
+- **Issues**: For bugs and features
+- **Email**: ChiranjibAI@users.noreply.github.com
+
+---
+
+**Thank you for contributing to OpenGrant! Together we're making open source funding accessible to everyone.** 🚀

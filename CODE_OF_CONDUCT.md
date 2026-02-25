@@ -2,44 +2,44 @@
 
 ## Our Pledge
 
-In the interest of fostering an open and welcoming environment, we as contributors and maintainers pledge to making participation in our project and our community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
+We are committed to providing a welcoming and inspiring community for all. We pledge that everyone participating in our community will treat all people with respect, regardless of their identity.
 
-## Our Standards
+## Expected Behavior
 
-Examples of behavior that contributes to creating a positive environment include:
+- **Be respectful**: Treat everyone with dignity and respect
+- **Be inclusive**: Welcome people of all backgrounds and experiences
+- **Be collaborative**: Work together to build something amazing
+- **Be patient**: Understand that not everyone has the same knowledge or experience
+- **Be professional**: Keep discussions constructive and focused
 
-* Using welcoming and inclusive language
-* Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism
-* Focusing on what is best for the community
-* Showing empathy towards other community members
+## Unacceptable Behavior
 
-Examples of unacceptable behavior by participants include:
+- Harassment, discrimination, or offensive language
+- Threats, intimidation, or aggressive behavior
+- Trolling, spam, or disruptive behavior
+- Privacy violations or doxxing
+- Any form of abuse
 
-* The use of sexualized language or imagery and unwelcome sexual attention or advances
-* Trolling, insulting/derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or electronic address, without explicit permission
-* Other conduct which could reasonably be considered inappropriate in a professional setting
+## Reporting Issues
 
-## Our Responsibilities
+If you witness or experience unacceptable behavior:
+1. **Contact us**: opengraunt-dev@github.com
+2. **Provide details**: What happened, when, and who was involved
+3. **We will respond**: Within 48 hours with next steps
 
-Project maintainers are responsible for clarifying the standards of acceptable behavior and are expected to take appropriate and fair corrective action in response to any instances of unacceptable behavior.
-
-Project maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, or to ban temporarily or permanently any contributor for other behaviors that they deem inappropriate, threatening, offensive, or harmful.
-
-## Scope
-
-This Code of Conduct applies within all project spaces, and it also applies when an individual is representing the project or its community in public spaces. Examples of representing a project or community include using an official project e-mail address, posting via an official social media account, or acting as an appointed representative at an online or offline event. Representation of a project may be further defined and clarified by project maintainers.
+All reports will be treated confidentially.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at [INSERT EMAIL]. All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances. The project team is obligated to maintain confidentiality with regard to the reporter of an incident. Further details of specific enforcement policies may be posted separately.
+Community members who violate this code of conduct may be:
+- Warned or asked to apologize
+- Temporarily or permanently banned from contributing
+- Reported to relevant authorities if laws are broken
 
-Project maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other members of the project's leadership.
+## Our Responsibility
 
-## Attribution
+Project maintainers are responsible for enforcing this code and will take appropriate action against violations.
 
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4, available at https://www.contributor-covenant.org/version/1/4/code-of-conduct.html
+---
 
-[homepage]: https://www.contributor-covenant.org
+**OpenGrant is committed to fostering an inclusive and welcoming community for all contributors.**
