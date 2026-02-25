@@ -42,4 +42,8 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Debug & Probe Tools (not for production)
 backend/probe_raw.py
+backend/probe_anthropic.py
+backend/diag_llm.py
