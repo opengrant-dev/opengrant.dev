@@ -64,10 +64,19 @@ async def fetch_repo_data(github_url: str) -> dict:
     async with httpx.AsyncClient(headers=_headers(), timeout=20.0) as client:
         # --- Core repo info ---
         repo_resp = await client.get(f"{GITHUB_API_BASE}/repos/{repo_full_name}")
+
+        # Handle various GitHub API errors
         if repo_resp.status_code == 404:
             raise ValueError(f"Repository '{repo_full_name}' not found on GitHub.")
-        if repo_resp.status_code == 403:
-            raise ValueError("GitHub API rate limit exceeded. Add a GITHUB_TOKEN in .env to increase limits.")
+        elif repo_resp.status_code == 401:
+            if GITHUB_TOKEN:
+                raise ValueError("GitHub token is invalid or expired. Please check your GITHUB_TOKEN in .env")
+            else:
+                raise ValueError("GitHub API requires authentication for this operation. Add GITHUB_TOKEN to .env (optional but recommended)")
+        elif repo_resp.status_code == 403:
+            remaining = repo_resp.headers.get("X-RateLimit-Remaining", "unknown")
+            raise ValueError(f"GitHub API rate limit exceeded (remaining: {remaining}). Add a GITHUB_TOKEN in .env to increase limits from 60 to 5000 requests/hour.")
+
         repo_resp.raise_for_status()
         repo_data = repo_resp.json()
 
