@@ -119,23 +119,30 @@ ACCELERATORS & SPONSORSHIPS
 4. Double-click START.bat    (launches app + opens browser)
 ```
 
-**Mac / Linux — terminal**
+# Open http://localhost:5173
+```
+
+---
+
+## Terminal CLI 💻
+
+OpenGrant includes a premium terminal interface for quick analysis without launching the browser.
 
 ```bash
-git clone https://github.com/ChiranjibAI/opengrant
-cd opengrant
+# Scan a repo for funding matches
+python opengrant.py scan https://github.com/facebook/react
 
-# Backend
-cd backend
-cp .env.example .env     # add your LLM_API_KEY
-pip install -r requirements.txt
-python main.py
+# Get AI monetization strategy
+python opengrant.py monetize https://github.com/facebook/react
 
-# Frontend (new terminal)
-cd ../frontend
-npm install && npm run dev
+# Search for live paid bounties
+python opengrant.py bounties --query "label:bounty"
 
-# Open http://localhost:5173
+# Generate a full grant application (use ID from scan)
+python opengrant.py write https://github.com/facebook/react 7
+
+# Launch everything (UI + API)
+python opengrant.py serve
 ```
 
 ---
@@ -181,7 +188,9 @@ slowapi          rate limiting   axios           API calls
 ```mermaid
 graph TD
     User([User]) --> Frontend[React / Vite / Tailwind]
+    User --> CLI[Terminal CLI - opengrant.py]
     Frontend --> API[FastAPI / backend]
+    CLI --> API
     API --> LLM{{LLM Engine - Groq/OpenAI}}
     API --> DB[(SQLite / matches / sources)]
     API --> GitHub API[[GitHub API]]
