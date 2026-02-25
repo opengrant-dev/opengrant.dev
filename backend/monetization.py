@@ -3,13 +3,10 @@ import httpx
 import re
 from typing import List, Dict, Any
 from github_api import _headers, GITHUB_API_BASE
-from openai import AsyncOpenAI
+from llm_utils import get_llm_client
 
-# Initialize OpenAI client (Groq compatible)
-client = AsyncOpenAI(
-    api_key=os.getenv("LLM_API_KEY"),
-    base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
-)
+# ── LLM Client — dynamic config via settings.json ──────────────────────────
+# Configuration happens inside generate_monetization_strategy via get_llm_client()
 
 async def fetch_live_bounties(query: str = "label:bounty label:\"help wanted\" state:open") -> List[Dict[str, Any]]:
     """
@@ -81,6 +78,7 @@ async def generate_monetization_strategy(repo_data: Dict[str, Any]) -> Dict[str,
     """
     
     try:
+        client, model = get_llm_client()
         response = await client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=model,

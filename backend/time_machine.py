@@ -8,16 +8,10 @@ produces a precise week-by-week action plan to maximize funding success.
 
 import json
 import os
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
+from llm_utils import get_llm_client
 
-load_dotenv()
-
-client = AsyncOpenAI(
-    api_key=os.getenv("LLM_API_KEY", ""),
-    base_url=os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
-)
-MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+# ── LLM Client — dynamic config via settings.json ──────────────────────────
+# Configuration happens inside generate_roadmap via get_llm_client()
 
 ROADMAP_SYSTEM_PROMPT = """You are an elite OSS funding strategist who has helped 200+ open source
 projects secure grants from Mozilla, NLnet, NSF, Linux Foundation, and other major funders.
@@ -109,8 +103,9 @@ Prioritize actions that unlock the most gates across multiple funders simultaneo
 Be SPECIFIC about which week to do what, and WHY it matters to these specific funders.
 """
 
+    client, model = get_llm_client()
     response = await client.chat.completions.create(
-        model=MODEL,
+        model=model,
         messages=[
             {"role": "system", "content": ROADMAP_SYSTEM_PROMPT},
             {"role": "user", "content": user_msg},

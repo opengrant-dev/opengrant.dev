@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { to: '/bounties', label: 'Bounties', icon: '🎯', tip: 'Earn by solving paid issues', color: 'emerald' },
   { to: '/magnet', label: 'Magnet', icon: '🧲', tip: 'Boost your sponsorship conversion', color: 'rose' },
   { to: '/leaderboard', label: 'TopRepos', icon: '🏆', tip: 'Most fundable repos on OpenGrant', color: 'purple' },
+  { to: '/settings', label: 'Settings', icon: '⚙️', tip: 'Configure AI engines & API keys', color: 'blue' },
 ]
 
 const ACTIVE_CLS = {

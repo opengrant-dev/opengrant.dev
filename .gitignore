@@ -14,10 +14,15 @@ build/
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+*.db-shm
+*.db-wal
 
 # Secrets - NEVER commit
 .env
 !.env.example
+backend/settings.json
+frontend/.env
 
 # Node
 node_modules/

@@ -16,18 +16,10 @@ Sections generated:
 """
 
 import json
-import os
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
-from funder_profiles import get_profile
+from llm_utils import get_llm_client
 
-load_dotenv()
-
-client = AsyncOpenAI(
-    api_key=os.getenv("LLM_API_KEY", ""),
-    base_url=os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
-)
-MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+# ── LLM Client — dynamic config via settings.json ──────────────────────────
+# Configuration happens inside generate_application via get_llm_client()
 
 WRITER_SYSTEM_PROMPT = """You are a world-class grant writer who has helped open source projects
 secure over $50M in funding from Mozilla, Linux Foundation, NSF, and major tech companies.
@@ -134,8 +126,9 @@ Every section should demonstrate deep understanding of the project and why this 
         )
         system_prompt = WRITER_SYSTEM_PROMPT + voice_injection
 
+    client, model = get_llm_client()
     response = await client.chat.completions.create(
-        model=MODEL,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_msg},

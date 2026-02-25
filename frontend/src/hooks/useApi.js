@@ -6,14 +6,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = ''
 
 // ---------------------------------------------------------------------------
 // Submit a repo and get back a repo_id
 // ---------------------------------------------------------------------------
 export function useSubmitRepo() {
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
   const submit = useCallback(async (githubUrl) => {
     setLoading(true)
@@ -37,9 +37,9 @@ export function useSubmitRepo() {
 // Poll repo status until "analyzed" or "error"
 // ---------------------------------------------------------------------------
 export function useRepoStatus(repoId) {
-  const [repo, setRepo]       = useState(null)
+  const [repo, setRepo] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!repoId) return
@@ -85,7 +85,7 @@ export function useRepoStatus(repoId) {
 export function useMatches(repoId, ready) {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!repoId || !ready) return
@@ -119,9 +119,9 @@ export function useMatches(repoId, ready) {
 // Fundability analysis for a repo
 // ---------------------------------------------------------------------------
 export function useFundability(repoId, ready) {
-  const [data, setData]       = useState(null)
+  const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!repoId || !ready) return
@@ -142,7 +142,7 @@ export function useFundability(repoId, ready) {
 // ---------------------------------------------------------------------------
 export function useGenerateApplication() {
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
   const generate = useCallback(async (repoId, fundingId) => {
     setLoading(true)
@@ -166,7 +166,7 @@ export function useGenerateApplication() {
 // Fetch platform stats for the landing page
 // ---------------------------------------------------------------------------
 export function useStats() {
-  const [stats, setStats]     = useState(null)
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

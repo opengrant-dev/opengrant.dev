@@ -19,7 +19,9 @@ import FunderDirectory from './pages/FunderDirectory'
 import Leaderboard from './pages/Leaderboard'
 import BountyHunter from './pages/BountyHunter'
 import SponsorMagnet from './pages/SponsorMagnet'
+import Settings from './pages/Settings'
 import Navbar from './components/Navbar'
+import DeveloperSeal from './components/DeveloperSeal'
 
 export default function App() {
   return (
@@ -29,6 +31,7 @@ export default function App() {
           <AuroraBackground />
           <ScrollProgress />
           <CommandPalette />
+          <DeveloperSeal />
           <Navbar />
           <main className="flex-1 relative z-10">
             <Routes>
@@ -51,6 +54,7 @@ export default function App() {
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/bounties" element={<BountyHunter />} />
               <Route path="/magnet" element={<SponsorMagnet />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
           <footer className="border-t border-white/5 py-10 text-slate-500 text-sm relative z-10">
@@ -89,6 +93,7 @@ export default function App() {
                       { to: '/bounties', label: '🎯 Bounty Hunter' },
                       { to: '/magnet', label: '🧲 Sponsor Magnet' },
                       { to: '/leaderboard', label: '🏆 Leaderboard' },
+                      { to: '/settings', label: '⚙️ API Configuration' },
                     ].map(({ to, label }) => (
                       <Link key={to} to={to} className="text-xs text-slate-600 hover:text-sky-400 transition-colors">{label}</Link>
                     ))}
@@ -107,7 +112,7 @@ export default function App() {
                 </div>
               </div>
               <div className="border-t border-white/5 pt-6 text-center text-xs text-slate-600">
-                OpenGrant &mdash; Free for all developers &bull; No account needed &bull; Built with ❤️ for the OSS community
+                OpenGrant &mdash; Built with ❤️ by <a href="https://github.com/Chiranjib" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:text-sky-300 transition-colors">Chiranjib</a> &bull; Free for all developers &bull; No account needed
               </div>
             </div>
           </footer>

@@ -41,6 +41,7 @@ from portfolio import optimize_portfolio
 from velocity import calculate_velocity
 from time_machine import generate_roadmap
 from monetization import fetch_live_bounties, generate_monetization_strategy
+from llm_utils import load_settings, save_settings
 
 load_dotenv()
 
@@ -791,12 +792,47 @@ class OrgScanRequest(BaseModel):
     org: str
 
 
+# ---------------------------------------------------------------------------
+# API Settings
+# ---------------------------------------------------------------------------
+@app.get("/api/settings")
+def get_api_settings():
+    """Get current LLM settings (keys masked)."""
+    settings = load_settings()
+    # Mask keys for security
+    masked = json.loads(json.dumps(settings))
+    for p in masked.get("providers", {}).values():
+        if p.get("api_key"):
+            p["api_key"] = p["api_key"][:4] + "*" * 10 + p["api_key"][-4:] if len(p["api_key"]) > 8 else "********"
+    return masked
+
+class SettingsUpdateRequest(BaseModel):
+    provider: str
+    config: Optional[dict] = None
+
+@app.post("/api/settings")
+def update_api_settings(body: SettingsUpdateRequest):
+    """Update LLM provider and/or configuration."""
+    settings = load_settings()
+    if body.provider not in settings.get("providers", {}):
+        raise HTTPException(status_code=400, detail="Invalid provider")
+    
+    settings["provider"] = body.provider
+    if body.config:
+        # Merge config
+        for k, v in body.config.items():
+            if k in settings["providers"][body.provider]:
+                settings["providers"][body.provider][k] = v
+    
+    save_settings(settings)
+    return {"status": "success", "provider": body.provider}
+
 @app.post("/api/org/scan")
-async def scan_org_endpoint(body: OrgScanRequest):
-    """Scan all public repos in a GitHub org/user and rank by fundability."""
+async def api_scan_org(body: OrgScanRequest):
+    """Scan a GitHub organization for high-impact repos."""
     try:
-        result = await scan_org(body.org)
-        return result
+        results = await scan_org(body.org)
+        return results
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

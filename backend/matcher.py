@@ -8,16 +8,10 @@ import json
 import os
 from typing import Any
 from openai import AsyncOpenAI
-from dotenv import load_dotenv
+from llm_utils import get_llm_client
 
-load_dotenv()
-
-# ── LLM Client — plug in any OpenAI-compatible provider ─────────────────────
-client = AsyncOpenAI(
-    api_key=os.getenv("LLM_API_KEY", ""),
-    base_url=os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
-)
-MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+# ── LLM Client — dynamic config via settings.json ──────────────────────────
+# Configuration now happens inside run_matching or _score_batch via get_llm_client()
 BATCH_SIZE = 10
 
 # Max candidates to send to AI after keyword pre-filter
@@ -128,9 +122,14 @@ def _build_funding_summary(funding_source: dict) -> str:
     eligibility = funding_source.get("eligibility", {})
     elig_str = f"{eligibility.get('location', 'global')}, {eligibility.get('type', 'any')}"
 
+    fid = funding_source.get('id', 'N/A')
+    name = funding_source.get('name', 'Unknown')
+    cat = funding_source.get('category', 'General')
+    ftype = funding_source.get('type', 'Grant')
+    
     return (
-        f"ID:{funding_source['id']} | {funding_source['name']} ({funding_source['category']}) | "
-        f"{funding_source['type']} | {amount} | Focus: {focus} | "
+        f"ID:{fid} | {name} ({cat}) | "
+        f"{ftype} | {amount} | Focus: {focus} | "
         f"Eligibility: {elig_str} | Tags: {tags}"
     )
 
@@ -184,8 +183,9 @@ Score EACH of the {len(funding_batch)} funding opportunities above against this 
 Return a JSON object with a "matches" array containing one entry per funding opportunity.
 """
 
+    client, model = get_llm_client()
     response = await client.chat.completions.create(
-        model=MODEL,
+        model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_msg},
@@ -207,11 +207,15 @@ Return a JSON object with a "matches" array containing one entry per funding opp
         else:
             return []
 
-    # Handle {"matches": [...]} or any dict with a list value
+    # Handle case where Ollama/Local LLMs return the array directly or in a weird wrapper
     if isinstance(parsed, dict):
+        # Look for the matches array in common keys
         for key in ("matches", "results", "funding_matches", "scores", "data"):
             if key in parsed and isinstance(parsed[key], list):
                 return parsed[key]
+        # Or if the whole dict *is* the match (happens if batch_size=1)
+        if "score" in parsed and "funding_id" in parsed:
+            return [parsed]
         # fallback: first list value
         for v in parsed.values():
             if isinstance(v, list):
@@ -237,8 +241,11 @@ async def run_matching(repo_data: dict, funding_sources: list[Any]) -> list[dict
         return []
 
     # Convert ORM objects to dicts for prompt building
-    def to_dict(fs) -> dict:
+    def to_dict(fs, idx) -> dict:
         if isinstance(fs, dict):
+            # Assign temporary ID if missing (common in CLI raw data)
+            if "id" not in fs:
+                fs["id"] = f"raw_{idx}"
             return fs
         return {
             "id": fs.id,
@@ -255,7 +262,7 @@ async def run_matching(repo_data: dict, funding_sources: list[Any]) -> list[dict
             "is_recurring": fs.is_recurring,
         }
 
-    funding_dicts = [to_dict(fs) for fs in funding_sources]
+    funding_dicts = [to_dict(fs, i) for i, fs in enumerate(funding_sources)]
     repo_summary = _build_repo_summary(repo_data)
 
     # ── Smart pre-filter: keyword match to top candidates before AI scoring ──
