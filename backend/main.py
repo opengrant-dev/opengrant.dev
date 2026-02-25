@@ -40,6 +40,7 @@ from funded_dna import compare_repo_to_funded_dna
 from portfolio import optimize_portfolio
 from velocity import calculate_velocity
 from time_machine import generate_roadmap
+from monetization import fetch_live_bounties, generate_monetization_strategy
 
 load_dotenv()
 
@@ -74,6 +75,13 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.on_event("startup")
+async def startup_event():
+    print("--- REGISTERED ROUTES ---")
+    for route in app.routes:
+        print(f"{route.path} [{route.methods if hasattr(route, 'methods') else 'N/A'}]")
+    print("-------------------------")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 _ALLOWED_ORIGINS = [
@@ -257,6 +265,42 @@ async def _analyze_and_match(repo_id: str):
 @app.get("/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/bounties")
+@limiter.limit("5/minute")
+async def get_bounties(request: Request, q: str = "label:bounty label:\"help wanted\" state:open"):
+    """Fetch live bounties from GitHub search."""
+    bounties = await fetch_live_bounties(q)
+    return {"bounties": bounties, "total": len(bounties)}
+
+
+class MonetizeRequest(BaseModel):
+    repo_id: str
+
+
+@app.post("/api/monetize/generate")
+async def generate_monetize_strategy(body: MonetizeRequest, db: Session = Depends(get_db)):
+    """Generate a custom monetization strategy for a repo."""
+    repo = db.query(Repo).filter(Repo.id == body.repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+    
+    # Build repo dict
+    repo_dict = {c.name: getattr(repo, c.name) for c in repo.__table__.columns}
+    for json_field in ("topics",):
+        val = repo_dict.get(json_field)
+        if isinstance(val, str):
+            try:
+                repo_dict[json_field] = json.loads(val)
+            except Exception:
+                repo_dict[json_field] = []
+
+    try:
+        strategy = await generate_monetization_strategy(repo_dict)
+        return strategy
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate strategy: {str(e)}")
 
 
 @app.get("/api/scan")

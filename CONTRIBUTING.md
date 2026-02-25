@@ -61,10 +61,14 @@ git push origin feature/your-feature
 
 ## Report a Bug
 
-Open an [Issue](https://github.com/ChiranjibAI/opengrant/issues/new) with:
+Open an [Issue](https://github.com/ChiranjibAI/opengrant/issues/new/choose) and select the **Bug Report** template. Please include:
 - What happened vs what you expected
 - Steps to reproduce
-- Error message (if any)
+- Relevant logs or screenshots
+
+## Request a Feature
+
+Open an [Issue](https://github.com/ChiranjibAI/opengrant/issues/new/choose) and select the **Feature Request** template.
 
 ## License
 

@@ -17,6 +17,8 @@ import VelocityDashboard from './pages/VelocityDashboard'
 import TrendingSpotlight from './pages/TrendingSpotlight'
 import FunderDirectory from './pages/FunderDirectory'
 import Leaderboard from './pages/Leaderboard'
+import BountyHunter from './pages/BountyHunter'
+import SponsorMagnet from './pages/SponsorMagnet'
 import Navbar from './components/Navbar'
 
 export default function App() {
@@ -47,6 +49,8 @@ export default function App() {
               <Route path="/trending" element={<TrendingSpotlight />} />
               <Route path="/funders" element={<FunderDirectory />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/bounties" element={<BountyHunter />} />
+              <Route path="/magnet" element={<SponsorMagnet />} />
             </Routes>
           </main>
           <footer className="border-t border-white/5 py-10 text-slate-500 text-sm relative z-10">
@@ -71,17 +75,19 @@ export default function App() {
                   <div className="font-semibold text-slate-400 text-xs uppercase tracking-wider mb-3">Tools</div>
                   <div className="flex flex-col gap-2">
                     {[
-                      { to: '/',            label: '🏠 Find Funding' },
-                      { to: '/applications',label: '📋 My Tracker' },
-                      { to: '/calendar',    label: '📅 Deadlines Calendar' },
-                      { to: '/org',         label: '🔍 Org Scanner' },
-                      { to: '/dependencies',label: '🗺️ Dependency Map' },
-                      { to: '/dna',         label: '🧬 DNA Match' },
-                      { to: '/portfolio',   label: '💼 Portfolio Optimizer' },
-                      { to: '/velocity',    label: '⚡ Velocity Dashboard' },
-                      { to: '/roadmap',     label: '🗺️ 90-Day Roadmap' },
-                      { to: '/trending',    label: '🔥 Trending Spotlight' },
-                      { to: '/funders',     label: '💰 Funder Directory' },
+                      { to: '/', label: '🏠 Find Funding' },
+                      { to: '/applications', label: '📋 My Tracker' },
+                      { to: '/calendar', label: '📅 Deadlines Calendar' },
+                      { to: '/org', label: '🔍 Org Scanner' },
+                      { to: '/dependencies', label: '🗺️ Dependency Map' },
+                      { to: '/dna', label: '🧬 DNA Match' },
+                      { to: '/portfolio', label: '💼 Portfolio Optimizer' },
+                      { to: '/velocity', label: '⚡ Velocity Dashboard' },
+                      { to: '/roadmap', label: '🗺️ 90-Day Roadmap' },
+                      { to: '/trending', label: '🔥 Trending Spotlight' },
+                      { to: '/funders', label: '💰 Funder Directory' },
+                      { to: '/bounties', label: '🎯 Bounty Hunter' },
+                      { to: '/magnet', label: '🧲 Sponsor Magnet' },
                       { to: '/leaderboard', label: '🏆 Leaderboard' },
                     ].map(({ to, label }) => (
                       <Link key={to} to={to} className="text-xs text-slate-600 hover:text-sky-400 transition-colors">{label}</Link>

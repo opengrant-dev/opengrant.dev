@@ -69,6 +69,8 @@ $ Input: github.com/your-org/your-repo
 | 🔍 **Org Scanner** | Bulk scan every repo in a GitHub org/user account at once |
 | 🗺️ **Dependency Map** | Check if your npm/pip dependencies are funded or at risk |
 | 🏷️ **README Badge** | Dynamic SVG badge showing live funding match count for your repo |
+| 🎯 **Bounty Hunter** | Fetch live, paid bounties from GitHub for your skill level |
+| 🧲 **Sponsor Magnet** | AI-generated `FUNDING.yml` and README optimization for maximum revenue |
 
 ---
 
@@ -168,6 +170,24 @@ SQLite           database        TailwindCSS     styling
 OpenAI SDK       LLM client      Framer Motion   animations
 httpx            async HTTP      React Router    navigation
 slowapi          rate limiting   axios           API calls
+```
+
+```
+
+---
+
+## Architecture
+
+```mermaid
+graph TD
+    User([User]) --> Frontend[React / Vite / Tailwind]
+    Frontend --> API[FastAPI / backend]
+    API --> LLM{{LLM Engine - Groq/OpenAI}}
+    API --> DB[(SQLite / matches / sources)]
+    API --> GitHub API[[GitHub API]]
+    GitHub API --> Bounties[Bounty Hunter]
+    LLM --> Applications[AI Grant Writing]
+    LLM --> Magnet[Sponsor Magnet]
 ```
 
 ---
