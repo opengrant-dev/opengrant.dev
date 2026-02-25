@@ -1,36 +1,56 @@
 ```
-███████╗███╗   ███╗████████╗    ██████╗ ██████╗ ███████╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███╗   ██╗████████╗
-██╔════╝████╗ ████║╚══██╔══╝   ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝ ██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝
-█████╗  ██╔████╔██║   ██║      ██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║  ███╗██████╔╝███████║██╔██╗ ██║   ██║
-██╔══╝  ██║╚██╔╝██║   ██║      ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██║   ██║██╔══██╗██╔══██║██║╚██╗██║   ██║
-███████╗██║ ╚═╝ ██║   ██║      ╚██████╔╝██║     ███████╗██║ ╚████║╚██████╔╝██║  ██║██║  ██║██║ ╚████║   ██║
-╚══════╝╚═╝     ╚═╝   ╚═╝       ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                      ██████╗ ██████╗ ███████╗███╗   ██╗                     ║
+║                     ██╔═══██╗██╔══██╗██╔════╝████╗  ██║                     ║
+║                     ██║   ██║██████╔╝█████╗  ██╔██╗ ██║                     ║
+║                     ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║                     ║
+║                     ╚██████╔╝██║     ███████╗██║ ╚████║                     ║
+║                      ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝                     ║
+║                                                                              ║
+║     ██████╗ ██████╗ ███████╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███╗   ██╗  ║
+║    ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝ ██╔══██╗██╔══██╗████╗  ██║  ║
+║    ██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║  ███╗██████╔╝███████║██╔██╗ ██║  ║
+║    ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██║   ██║██╔══██╗██╔══██║██║╚██╗██║  ║
+║    ╚██████╔╝██║     ███████╗██║ ╚████║╚██████╔╝██║  ██║██║  ██║██║ ╚████║  ║
+║     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝  ║
+║                                                                              ║
+║              🚀 THE ULTIMATE AI-POWERED FUNDING OPERATING SYSTEM 🚀          ║
+║                                                                              ║
+║                  Founder & Lead Architect: Chiranjib                        ║
+║                  Designed & Engineered by Chiranjib                         ║
+║                                                                              ║
+║                Status: 🟢 PRODUCTION READY | Grade: A- SECURITY             ║
+║                                                                              ║
+║            💰 Making Open Source Funding Accessible to Everyone 💰          ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## 🟢 $OPENGRANT — FUNDING OPERATING SYSTEM
+## 🔵 OPENGRANT — FUNDING OPERATING SYSTEM
 
 ```
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                                         ┃
-┃               🚀 THE ULTIMATE AI-POWERED FUNDING OS 🚀                 ┃
+┃              🚀 THE ULTIMATE AI-POWERED FUNDING OS 🚀                  ┃
 ┃                                                                         ┃
-┃               Founder & Lead Architect: Chiranjib                      ┃
-┃               Designed & Engineered by Chiranjib                       ┃
+┃                        Built by Chiranjib                              ┃
+┃                   Engineering Excellence 2026                          ┃
 ┃                                                                         ┃
-┃               Status: 🟢 PRODUCTION READY | Grade: A- SECURITY         ┃
-┃                                                                         ┃
-┃          💰 Making Open Source Funding Accessible to Everyone 💰       ┃
+┃                 Status: 🟢 PRODUCTION READY                            ┃
+┃                 Security Grade: A- (Excellent)                         ┃
+┃                 Code Quality: 52K+ lines                               ┃
 ┃                                                                         ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
 ---
 
-## 🎯 $OPENGRANT ECOSYSTEM
+## 🎯 OPENGRANT ECOSYSTEM
 
-**$OPENGRANT** is the ultimate AI-powered funding operating system for open source projects.
+**OPENGRANT** is the ultimate AI-powered funding operating system for open source projects.
 
 - **298+ Verified Funding Sources** across all categories
 - **AI Matching Engine** using 25 funder personality profiles
@@ -207,9 +227,9 @@ Backend:  http://localhost:8765/docs
 ## 🔐 SECURITY AUDIT RESULTS
 
 ```
-╔═══════════════════════════════════════════════════════╗
-║        SECURITY STATUS: ✅ PASSED (A- GRADE)        ║
-╚═══════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════╗
+║        SECURITY STATUS: ✅ PASSED (A- GRADE)            ║
+╚═══════════════════════════════════════════════════════════╝
 
 OWASP Top 10 Coverage:
   ✅ A1: Injection               → SQLAlchemy ORM
@@ -238,7 +258,7 @@ KEY SECURITY FEATURES:
 ## 📦 PROJECT STRUCTURE
 
 ```
-$OPENGRANT/
+OPENGRANT/
 ├── backend/                # FastAPI Server
 │   ├── main.py            # All API endpoints
 │   ├── matcher.py         # AI matching engine
@@ -407,7 +427,7 @@ Thanks to: GitHub, Open Source Community
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║  $OPENGRANT v2.0.0-beta is production-ready.               ║
+║  OPENGRANT v2.0.0-beta is production-ready.                ║
 ║                                                              ║
 ║  Making open source funding accessible to every developer   ║
 ║  in the world.                                              ║
@@ -424,7 +444,7 @@ Thanks to: GitHub, Open Source Community
 
 ---
 
-**$OPENGRANT v2.0.0-beta**
+**OPENGRANT v2.0.0-beta**
 Built by **Chiranjib**
 🟢 Production Ready | A- Security Grade | 52K+ LOC
 
