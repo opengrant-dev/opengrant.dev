@@ -33,9 +33,48 @@ def get_logic():
 app = typer.Typer(help="OpenGrant CLI - Find funding and monetize your OSS projects.")
 console = Console()
 
+ASCII_ART = """
+[bold cyan]  ██████╗ ██████╗ ███████╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███╗   ██╗████████╗[/bold cyan]
+[bold cyan] ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔════╝ ██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝[/bold cyan]
+[bold blue] ██║   ██║██████╔╝█████╗  ██╔██╗ ██║██║  ███╗██████╔╝███████║██╔██╗ ██║   ██║   [/bold blue]
+[bold blue] ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██║   ██║██╔══██╗██╔══██║██║╚██╗██║   ██║   [/bold blue]
+[bold magenta] ╚██████╔╝██║     ███████╗██║ ╚████║╚██████╔╝██║  ██║██║  ██║██║ ╚████║   ██║   [/bold magenta]
+[bold magenta]  ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   [/bold magenta]
+"""
+
+def print_header():
+    console.print(ASCII_ART)
+    console.print("[bold white]The AI-Powered Open Source Funding Discovery Platform[/bold white]\n")
+    
+    social_table = Table.grid(padding=(0, 2))
+    social_table.add_column(style="cyan")
+    social_table.add_column(style="magenta")
+    social_table.add_row(
+        "Twitter: [bold]@chiranjibai[/bold]",
+        "GitHub: [bold]ChiranjibAI[/bold]"
+    )
+    console.print(Panel(social_table, border_style="dim", title="[bold dim]Connect & Support[/bold dim]", expand=False))
+    console.print("\n")
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """
+    Main entry point for OpenGrant CLI. Prints branding if no command is given.
+    """
+    if ctx.invoked_subcommand is None:
+        print_header()
+        console.print("[bold yellow]Available Commands:[/bold yellow]")
+        console.print("  [bold green]scan[/bold green] [dim]<url>[/dim]      - Scan repo for funding matches")
+        console.print("  [bold green]monetize[/bold green] [dim]<url>[/dim]  - Generate AI monetization strategy")
+        console.print("  [bold green]bounties[/bold green]         - Search live paid bounties")
+        console.print("  [bold green]write[/bold green] [dim]<url> <id>[/dim] - Draft a full grant application")
+        console.print("  [bold green]serve[/bold green]            - Start full-stack UI & API")
+        console.print("\n[dim]Run [bold]python opengrant.py <command> --help[/bold] for details.[/dim]")
+
 @app.command()
 def scan(url: str):
     """Scan a repository and find funding matches."""
+    print_header()
     fetch_repo_data, run_matching, _, _, analyze_fundability = get_logic()
     
     with Progress(
@@ -99,6 +138,7 @@ def scan(url: str):
 @app.command()
 def bounties(query: str = "label:bounty label:\"help wanted\" state:open"):
     """Fetch live paid bounties from GitHub."""
+    print_header()
     _, _, fetch_live_bounties, _, _ = get_logic()
     
     with console.status("[bold green]Searching for bounties...") as status:
@@ -122,6 +162,7 @@ def bounties(query: str = "label:bounty label:\"help wanted\" state:open"):
 @app.command()
 def monetize(url: str):
     """Generate an AI monetization strategy for a repository."""
+    print_header()
     fetch_repo_data, _, _, generate_monetization_strategy, _ = get_logic()
     
     with console.status("[bold yellow]Generating AI Strategy...") as status:
@@ -134,19 +175,27 @@ def monetize(url: str):
 
     console.print(Panel.fit("[bold green]AI Monetization Strategy[/bold green]"))
     
+    # Ensure strategy is a dict and has keys
+    if not strategy or not isinstance(strategy, dict):
+        console.print("[yellow]Warning: AI strategy was empty or invalid. Using defaults.[/yellow]")
+        strategy = {}
+
     console.print("\n[bold]FUNDING.yml Suggestion:[/bold]")
-    console.print(Panel(strategy.get('fundingYml', 'N/A'), border_style="blue"))
+    console.print(Panel(str(strategy.get('fundingYml') or 'N/A'), border_style="blue"))
     
     console.print("\n[bold]README Support Snippet:[/bold]")
-    console.print(Panel(strategy.get('readmeSnippet', 'N/A'), border_style="magenta"))
+    console.print(Panel(str(strategy.get('readmeSnippet') or 'N/A'), border_style="magenta"))
     
     console.print("\n[bold]Expert Tips:[/bold]")
-    for tip in strategy.get('tips', []):
-        console.print(f" • {tip}")
+    tips = strategy.get('tips') or ["Enable GitHub Sponsors", "Add a FUNDING.yml file", "Look for grants"]
+    for tip in tips:
+        if tip:
+            console.print(f" • {tip}")
 
 @app.command()
 def write(url: str, funding_id: int):
     """Generate a complete grant application for a repository and funding source."""
+    print_header()
     fetch_repo_data, _, _, _, _ = get_logic()
     from backend.application_writer import generate_application
     from backend.funding_db import FUNDING_SOURCES
