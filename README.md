@@ -26,6 +26,23 @@ Making open source funding accessible to every developer in the world.
 
 ---
 
+### 🚀 Show Your Funding Opportunities
+
+Add this badge to your GitHub README to display your funding matches:
+
+```markdown
+[![OpenGrant](https://opengrant.dev/badge/owner/repo.svg)](https://opengrant.dev/results)
+```
+
+**Example for OpenGrant itself:**
+```markdown
+[![OpenGrant](https://opengrant.dev/badge/opengrant-dev/opengrant.dev.svg)](https://opengrant.dev/results)
+```
+
+The badge auto-updates with your latest match count! 🎯
+
+---
+
 ## 🎯 CORE FEATURES
 
 ### For Open Source Projects
