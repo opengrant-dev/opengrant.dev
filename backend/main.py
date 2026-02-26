@@ -89,7 +89,9 @@ _ALLOWED_ORIGINS = [
     FRONTEND_URL,
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://opengrant.dev",  # production domain (update when deploying)
+    "https://opengrant.tech",
+    "https://www.opengrant.tech",
+    "https://opengrant.dev",
 ]
 app.add_middleware(
     CORSMiddleware,

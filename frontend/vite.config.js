@@ -1,22 +1,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const apiUrl = process.env.VITE_API_URL || 'http://localhost:8765'
+
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
+  },
   server: {
     port: 5173,
     strictPort: false,
     proxy: {
       '/api': {
-        target: 'http://localhost:8765',
+        target: apiUrl,
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:8765',
+        target: apiUrl,
         changeOrigin: true,
       },
       '/badge': {
-        target: 'http://localhost:8765',
+        target: apiUrl,
         changeOrigin: true,
       },
     },
