@@ -1303,7 +1303,7 @@ def get_leaderboard(limit: int = 25, db: Session = Depends(get_db)):
 # Twitter Post Generator
 # ---------------------------------------------------------------------------
 @app.post("/api/twitter/generate")
-async def generate_twitter_posts(body: RepoSubmissionRequest):
+async def generate_twitter_posts(body: RepoSubmitRequest):
     """
     Generate Twitter posts from GitHub repo data.
     Extracts user info, repo stats, and generates 6 variations.
