@@ -47,3 +47,5 @@ desktop.ini
 backend/probe_raw.py
 backend/probe_anthropic.py
 backend/diag_llm.py
+
+.vercel
