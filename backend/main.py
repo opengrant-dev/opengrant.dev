@@ -1298,6 +1298,35 @@ def get_leaderboard(limit: int = 25, db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
+# Twitter Post Generator
+# ---------------------------------------------------------------------------
+@app.post("/api/twitter/generate")
+async def generate_twitter_posts(body: RepoSubmissionRequest):
+    """
+    Generate Twitter posts from GitHub repo data.
+    Extracts user info, repo stats, and generates 6 variations.
+    """
+    try:
+        from github_twitter_generator import extract_and_generate
+
+        result = await extract_and_generate(body.github_url)
+
+        if result["success"]:
+            return {
+                "success": True,
+                "user": result["user"],
+                "repo": result["repo"],
+                "posts": result["posts"],
+                "count": len(result["posts"]),
+            }
+        else:
+            return {"success": False, "error": result["error"]}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# ---------------------------------------------------------------------------
 # Run locally
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
