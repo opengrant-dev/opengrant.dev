@@ -7,6 +7,12 @@ import random
 from typing import Optional, List
 from datetime import datetime
 
+# Fix Windows encoding for Unicode
+if sys.platform == 'win32':
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 # Add backend to path
 sys.path.append(os.path.join(os.getcwd(), "backend"))
 
